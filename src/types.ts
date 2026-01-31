@@ -31,6 +31,31 @@ export interface MonitoringStats {
   errorRate: number;
 }
 
+export interface ProviderStats {
+  provider: string;
+  model: string;
+  requests: number;
+  cost: number;
+  avgDuration: number;
+  errorCount: number;
+}
+
+export interface TimeSeriesPoint {
+  timestamp: number;
+  value: number;
+}
+
+export interface MetricsData {
+  totals: MonitoringStats;
+  byProvider: ProviderStats[];
+  timeSeries: {
+    requests: TimeSeriesPoint[];
+    cost: TimeSeriesPoint[];
+    duration: TimeSeriesPoint[];
+    errors: TimeSeriesPoint[];
+  };
+}
+
 export interface TraceSummary {
   requestId: string;
   provider: string;
@@ -51,12 +76,37 @@ export interface PaginatedTraces {
   offset: number;
 }
 
+/**
+ * Storage adapter interface for monitoring data.
+ * 
+ * Required methods:
+ * - saveEvent: Persist telemetry events
+ * - getStats: Aggregate statistics for dashboard overview
+ * 
+ * Optional methods (dashboard features):
+ * - getMetrics: Time-series data for charts
+ * - listTraces: Paginated trace list
+ * - getEvents: Event details for a specific request
+ */
 export interface MonitoringStore {
+  // Required: Core telemetry
   saveEvent(event: MonitoringEvent): Promise<void>;
-  getEvents(requestId: string): Promise<MonitoringEvent[]>;
   getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats>;
-  listTraces(options?: { limit?: number; offset?: number }): Promise<PaginatedTraces>;
+  
+  // Optional: Dashboard features
+  getMetrics?(options?: { from?: Date; to?: Date }): Promise<MetricsData>;
+  listTraces?(options?: { limit?: number; offset?: number }): Promise<PaginatedTraces>;
+  getEvents?(requestId: string): Promise<MonitoringEvent[]>;
 }
+
+/**
+ * CORS configuration for dashboard API endpoints.
+ */
+export type CorsConfig = 
+  | boolean           // true = allow all, false = same-origin only
+  | string            // specific origin
+  | string[]          // multiple origins
+  | { origin: string | string[]; credentials?: boolean };
 
 export interface MonitorOptions {
   store: MonitoringStore;

@@ -8,12 +8,21 @@ export type EventType =
 
 export interface MonitoringEvent {
   id: string;
+  eventType: string;
   requestId: string;
-  timestamp: Date;
-  eventType: EventType;
+  sessionId?: string;
+  transactionId?: string;
+  time: Date;
+  duration?: number;
+  cost?: number;
+  cpuTime?: number;
+  gcTime?: number;
+  allocations?: number;
+  payload: Record<string, any>;
+  createdAt: Date;
+  // Core metadata for indexing/filtering
   provider: string;
   model: string;
-  payload?: Record<string, any>;
 }
 
 export interface MonitoringStore {

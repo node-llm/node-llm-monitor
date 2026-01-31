@@ -9,14 +9,22 @@ Advanced, infrastructure-first monitoring for NodeLLM.
 Add the following model to your `schema.prisma`:
 
 ```prisma
-model llm_monitoring_events {
-  id        String   @id @default(uuid())
-  requestId String   @index
-  timestamp DateTime @default(now())
-  eventType String   // request_start, request_end, tool_start, etc.
-  provider  String
-  model     String
-  payload   Json     // Stores metadata, tokens, cost, and optional content
+model monitoring_events {
+  id             String   @id @default(uuid())
+  event_type     String   // request.start, request.end, tool.start, etc.
+  request_id     String   @index
+  session_id     String?  @index
+  transaction_id String?  @index
+  time           DateTime @default(now())
+  duration       Int?     // duration in ms
+  cost           Float?
+  cpu_time       Float?
+  gc_time        Float?
+  allocations    Int?
+  payload        Json     // Stores metadata, tokens and optional content
+  created_at     DateTime @default(now())
+  provider       String
+  model          String
 }
 ```
 

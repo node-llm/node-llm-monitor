@@ -14,12 +14,20 @@ export class PrismaAdapter implements MonitoringStore {
     await this.prisma[this.tableName].create({
       data: {
         id: event.id,
-        requestId: event.requestId,
-        timestamp: event.timestamp,
         eventType: event.eventType,
+        requestId: event.requestId,
+        sessionId: event.sessionId,
+        transactionId: event.transactionId,
+        time: event.time,
+        duration: event.duration,
+        cost: event.cost,
+        cpuTime: event.cpuTime,
+        gcTime: event.gcTime,
+        allocations: event.allocations,
+        payload: event.payload || {},
+        createdAt: event.createdAt,
         provider: event.provider,
-        model: event.model,
-        payload: event.payload || {}
+        model: event.model
       }
     });
   }

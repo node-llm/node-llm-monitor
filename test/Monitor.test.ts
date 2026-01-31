@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Monitor } from "../src/Monitor.js";
-import { MonitoringStore } from "../src/types.js";
+import type { MonitoringStore } from "../src/types.js";
 
 describe("Monitor Middleware", () => {
   it("should capture events and send them to the store", async () => {
@@ -22,7 +22,7 @@ describe("Monitor Middleware", () => {
     
     expect(saveEvent).toHaveBeenCalledWith(expect.objectContaining({
       requestId: "req-123",
-      eventType: "request_start",
+      eventType: "request.start",
       provider: "openai"
     }));
   });
@@ -41,7 +41,7 @@ describe("Monitor Middleware", () => {
 
     await monitor.onResponse(ctx, result);
 
-    const call = saveEvent.mock.calls[0][0];
+    const call = saveEvent.mock.calls[0]![0];
     expect(call.payload.result).toBeUndefined();
     expect(call.payload.usage.total_tokens).toBe(10);
   });

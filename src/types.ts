@@ -1,10 +1,10 @@
 export type EventType = 
-  | "request_start"
-  | "request_end"
-  | "request_error"
-  | "tool_start"
-  | "tool_end"
-  | "tool_error";
+  | "request.start"
+  | "request.end"
+  | "request.error"
+  | "tool.start"
+  | "tool.end"
+  | "tool.error";
 
 export interface MonitoringEvent {
   id: string;
@@ -20,7 +20,6 @@ export interface MonitoringEvent {
   allocations?: number;
   payload: Record<string, any>;
   createdAt: Date;
-  // Core metadata for indexing/filtering
   provider: string;
   model: string;
 }
@@ -40,21 +39,27 @@ export interface TraceSummary {
   endTime?: Date;
   duration?: number;
   cost?: number;
+  cpuTime?: number;
+  allocations?: number;
   status: "success" | "error" | "running";
+}
+
+export interface PaginatedTraces {
+  items: TraceSummary[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface MonitoringStore {
   saveEvent(event: MonitoringEvent): Promise<void>;
   getEvents(requestId: string): Promise<MonitoringEvent[]>;
   getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats>;
-  listTraces(options?: { limit?: number; offset?: number }): Promise<TraceSummary[]>;
+  listTraces(options?: { limit?: number; offset?: number }): Promise<PaginatedTraces>;
 }
 
 export interface MonitorOptions {
   store: MonitoringStore;
-  /**
-   * If true, captures the full prompt and response content in the event payload.
-   * Defaults to false for privacy compliance.
-   */
   captureContent?: boolean;
+  onError?: (error: Error, event: MonitoringEvent) => void;
 }

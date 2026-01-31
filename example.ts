@@ -14,8 +14,25 @@ const memoryStore = {
   async getStats() {
     return { totalRequests: 0, totalCost: 0, avgDuration: 0, errorRate: 0 };
   },
-  async listTraces() {
-    return [];
+  async listTraces(options: { limit?: number; offset?: number } = {}) {
+    const limit = options.limit ?? 50;
+    const offset = options.offset ?? 0;
+    // Returning recent ends/errors as summaries
+    const items = this.events
+      .filter((e: any) => e.eventType === "request.end")
+      .map((e: any) => ({
+        requestId: e.requestId,
+        provider: e.provider,
+        model: e.model,
+        startTime: new Date(e.time.getTime() - (e.duration || 0)),
+        endTime: e.time,
+        duration: e.duration,
+        cost: e.cost,
+        cpuTime: e.cpuTime,
+        allocations: e.allocations,
+        status: "success" as const
+      }));
+    return { items, total: items.length, limit, offset };
   }
 };
 

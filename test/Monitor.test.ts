@@ -9,7 +9,7 @@ describe("Monitor Middleware", () => {
       saveEvent,
       getEvents: vi.fn(),
       getStats: vi.fn(),
-      listTraces: vi.fn()
+      listTraces: vi.fn().mockResolvedValue({ items: [], total: 0, limit: 50, offset: 0 })
     };
 
     const monitor = new Monitor({ store });
@@ -35,7 +35,7 @@ describe("Monitor Middleware", () => {
       saveEvent, 
       getEvents: vi.fn(),
       getStats: vi.fn(),
-      listTraces: vi.fn()
+      listTraces: vi.fn().mockResolvedValue({ items: [], total: 0, limit: 50, offset: 0 })
     };
     const monitor = new Monitor({ store });
 

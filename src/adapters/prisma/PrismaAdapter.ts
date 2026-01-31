@@ -1,17 +1,21 @@
-import type { MonitoringStore, MonitoringEvent } from "../../types.js";
+import type { 
+  MonitoringStore, 
+  MonitoringEvent, 
+  MonitoringStats, 
+  TraceSummary,
+  PaginatedTraces
+} from "../../types.js";
 
-/**
- * Prisma adapter for NodeLLM Monitor.
- * Expects a model named 'llm_monitoring_events' (or similar) in your schema.
- */
 export class PrismaAdapter implements MonitoringStore {
   constructor(
-    private prisma: any,
-    private tableName: string = "llm_monitoring_events"
-  ) {}
+    private readonly prisma: any,
+    private readonly tableName: string = "monitoring_events"
+  ) {
+    this.validatePrismaClient();
+  }
 
   async saveEvent(event: MonitoringEvent): Promise<void> {
-    await this.prisma[this.tableName].create({
+    await this.model.create({
       data: {
         id: event.id,
         eventType: event.eventType,
@@ -24,7 +28,7 @@ export class PrismaAdapter implements MonitoringStore {
         cpuTime: event.cpuTime,
         gcTime: event.gcTime,
         allocations: event.allocations,
-        payload: event.payload || {},
+        payload: event.payload,
         createdAt: event.createdAt,
         provider: event.provider,
         model: event.model
@@ -33,25 +37,24 @@ export class PrismaAdapter implements MonitoringStore {
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {
-    return this.prisma[this.tableName].findMany({
+    return this.model.findMany({
       where: { requestId },
       orderBy: { time: "asc" }
     });
   }
 
-  async getStats(options: { from?: Date; to?: Date } = {}): Promise<any> {
-    const where: any = {};
-    if (options.from || options.to) {
-      where.time = {};
-      if (options.from) where.time.gte = options.from;
-      if (options.to) where.time.lte = options.to;
-    }
+  async getStats(options: { from?: Date; to?: Date } = {}): Promise<MonitoringStats> {
+    const timeFilter: any = {};
+    if (options.from) timeFilter.gte = options.from;
+    if (options.to) timeFilter.lte = options.to;
+
+    const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
     const [totalRequests, totalCostData, avgDurationData, errorCount] = await Promise.all([
-      this.prisma[this.tableName].count({ where: { ...where, eventType: "request.start" } }),
-      this.prisma[this.tableName].aggregate({ where, _sum: { cost: true } }),
-      this.prisma[this.tableName].aggregate({ where, _avg: { duration: true } }),
-      this.prisma[this.tableName].count({ where: { ...where, eventType: "request.error" } })
+      this.model.count({ where: { ...where, eventType: "request.start" } }),
+      this.model.aggregate({ where, _sum: { cost: true } }),
+      this.model.aggregate({ where, _avg: { duration: true } }),
+      this.model.count({ where: { ...where, eventType: "request.error" } })
     ]);
 
     return {
@@ -62,17 +65,25 @@ export class PrismaAdapter implements MonitoringStore {
     };
   }
 
-  async listTraces(options: { limit?: number; offset?: number } = {}): Promise<any[]> {
-    const events = await this.prisma[this.tableName].findMany({
-      where: {
-        eventType: { in: ["request.end", "request.error"] }
-      },
-      orderBy: { time: "desc" },
-      take: options.limit || 50,
-      skip: options.offset || 0
-    });
+  async listTraces(options: { limit?: number; offset?: number } = {}): Promise<PaginatedTraces> {
+    const limit = options.limit ?? 50;
+    const offset = options.offset ?? 0;
 
-    return events.map((e: any) => ({
+    const [items, total] = await Promise.all([
+      this.model.findMany({
+        where: {
+          eventType: { in: ["request.end", "request.error"] }
+        },
+        orderBy: { time: "desc" },
+        take: limit,
+        skip: offset
+      }),
+      this.model.count({
+        where: { eventType: { in: ["request.end", "request.error"] } }
+      })
+    ]);
+
+    const summaries: TraceSummary[] = items.map((e: any) => ({
       requestId: e.requestId,
       provider: e.provider,
       model: e.model,
@@ -80,7 +91,26 @@ export class PrismaAdapter implements MonitoringStore {
       endTime: e.time,
       duration: e.duration,
       cost: e.cost,
+      cpuTime: e.cpuTime,
+      allocations: e.allocations,
       status: e.eventType === "request.end" ? "success" : "error"
     }));
+
+    return { items: summaries, total, limit, offset };
+  }
+
+  /**
+   * Accessor for the dynamic Prisma model to ensure defensive table access.
+   */
+  private get model() {
+    return this.prisma[this.tableName];
+  }
+
+  private validatePrismaClient() {
+    if (!this.prisma || typeof this.prisma[this.tableName]?.create !== 'function') {
+      throw new Error(
+        `[PrismaAdapter] Critical: Prisma model '${this.tableName}' not found or incorrectly generated.`
+      );
+    }
   }
 }

@@ -1,84 +1,91 @@
-import type { MonitoringStore, MonitorOptions, EventType, MonitoringEvent } from "./types.js";
-// Using internal type definitions to avoid hard dependency on @node-llm/core for now
-// while keeping compatibility with its Middleware interface.
 import { randomUUID } from "node:crypto";
+import type { 
+  MonitoringStore, 
+  MonitorOptions, 
+  MonitoringEvent 
+} from "./types.js";
+
+/**
+ * Minimal interface for NodeLLM context to ensure type safety without forcing dependencies.
+ */
+export interface MinimalContext {
+  requestId: string;
+  provider: string;
+  model: string;
+  state: Record<string, any>;
+  messages?: any[];
+  options?: Record<string, any>;
+  sessionId?: string;
+  transactionId?: string;
+}
 
 export class Monitor {
   public readonly name = "NodeLLMMonitor";
-  private store: MonitoringStore;
-  private captureContent: boolean;
+  
+  private readonly store: MonitoringStore;
+  private readonly captureContent: boolean;
+  private readonly errorHook?: ((error: Error, event: MonitoringEvent) => void) | undefined;
 
   constructor(options: MonitorOptions) {
     this.store = options.store;
     this.captureContent = options.captureContent ?? false;
+    this.errorHook = options.onError;
   }
 
-  async onRequest(ctx: any): Promise<void> {
-    ctx.state._monitorCpuStart = process.cpuUsage();
-    ctx.state._monitorMemStart = process.memoryUsage().heapUsed;
+  async onRequest(ctx: MinimalContext): Promise<void> {
+    this.initializeMetrics(ctx);
     
-    await this.log(ctx, "request.start", {
+    await this.emit(ctx, "request.start", {
       messages: this.captureContent ? ctx.messages : undefined,
       options: ctx.options
     });
   }
 
-  async onResponse(ctx: any, result: any): Promise<void> {
-    const cpuUsage = process.cpuUsage(ctx.state._monitorCpuStart);
-    const cpuTime = (cpuUsage.user + cpuUsage.system) / 1000; // ms
-    const allocations = process.memoryUsage().heapUsed - (ctx.state._monitorMemStart || 0);
-    const duration = Date.now() - (ctx.state._monitorStart as number || Date.now());
+  async onResponse(ctx: MinimalContext, result: { toString(): string; usage?: any }): Promise<void> {
+    const metrics = this.calculateMetrics(ctx, result.usage);
 
-    await this.log(ctx, "request.end", {
+    await this.emit(ctx, "request.end", {
       result: this.captureContent ? result.toString() : undefined,
       usage: result.usage
-    }, {
-      duration,
-      cost: result.usage?.cost,
-      cpuTime,
-      allocations: allocations > 0 ? allocations : 0
-    });
+    }, metrics);
   }
 
-  async onError(ctx: any, error: Error): Promise<void> {
-    const duration = Date.now() - (ctx.state._monitorStart as number || Date.now());
-    await this.log(ctx, "request.error", {
+  async onError(ctx: MinimalContext, error: Error): Promise<void> {
+    const metrics = this.calculateMetrics(ctx);
+    
+    await this.emit(ctx, "request.error", {
       error: error.message,
       stack: error.stack
-    }, { duration });
+    }, metrics);
   }
 
-  async onToolCallStart(ctx: any, tool: any): Promise<void> {
-    await this.log(ctx, "tool.start", {
-      toolCall: tool
-    });
+  async onToolCallStart(ctx: MinimalContext, tool: any): Promise<void> {
+    await this.emit(ctx, "tool.start", { toolCall: tool });
   }
 
-  async onToolCallEnd(ctx: any, tool: any, result: any): Promise<void> {
-    await this.log(ctx, "tool.end", {
+  async onToolCallEnd(ctx: MinimalContext, tool: any, result: any): Promise<void> {
+    await this.emit(ctx, "tool.end", {
       toolCallId: tool.id,
       result: this.captureContent ? result : undefined
     });
   }
 
-  async onToolCallError(ctx: any, tool: any, error: Error): Promise<void> {
-    await this.log(ctx, "tool.error", {
+  async onToolCallError(ctx: MinimalContext, tool: any, error: Error): Promise<void> {
+    await this.emit(ctx, "tool.error", {
       toolCallId: tool.id,
       error: error.message
     });
   }
 
-  private async log(
-    ctx: any, 
+  /**
+   * Internal telemetry engine
+   */
+  private async emit(
+    ctx: MinimalContext, 
     eventType: string, 
     payload: any, 
     metrics: Partial<MonitoringEvent> = {}
   ): Promise<void> {
-    // Inject start time on first event
-    if (eventType === "request.start") {
-      ctx.state._monitorStart = Date.now();
-    }
-
     const event: MonitoringEvent = {
       id: randomUUID(),
       eventType,
@@ -93,8 +100,38 @@ export class Monitor {
       ...metrics
     };
 
+    // Non-blocking persistence with error isolation
     this.store.saveEvent(event).catch(err => {
-      console.error(`[Monitor] Failed to save event ${eventType}:`, err);
+      if (this.errorHook) {
+        this.errorHook(err, event);
+      } else {
+        console.error(`[NodeLLM-Monitor] Storage Failure (${eventType}):`, err.message);
+      }
     });
+  }
+
+  private initializeMetrics(ctx: MinimalContext): void {
+    ctx.state._monitor = {
+      startTime: Date.now(),
+      cpuStart: process.cpuUsage(),
+      memStart: process.memoryUsage().heapUsed
+    };
+  }
+
+  private calculateMetrics(ctx: MinimalContext, usage?: any): Partial<MonitoringEvent> {
+    const state = ctx.state._monitor;
+    if (!state) return {};
+
+    const cpuUsage = process.cpuUsage(state.cpuStart);
+    const cpuTime = (cpuUsage.user + cpuUsage.system) / 1000; // ms
+    const allocations = process.memoryUsage().heapUsed - (state.memStart || 0);
+    const duration = Date.now() - state.startTime;
+
+    return {
+      duration,
+      cost: usage?.cost,
+      cpuTime,
+      allocations: Math.max(0, allocations)
+    };
   }
 }

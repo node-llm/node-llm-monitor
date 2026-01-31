@@ -25,9 +25,29 @@ export interface MonitoringEvent {
   model: string;
 }
 
+export interface MonitoringStats {
+  totalRequests: number;
+  totalCost: number;
+  avgDuration: number;
+  errorRate: number;
+}
+
+export interface TraceSummary {
+  requestId: string;
+  provider: string;
+  model: string;
+  startTime: Date;
+  endTime?: Date;
+  duration?: number;
+  cost?: number;
+  status: "success" | "error" | "running";
+}
+
 export interface MonitoringStore {
   saveEvent(event: MonitoringEvent): Promise<void>;
   getEvents(requestId: string): Promise<MonitoringEvent[]>;
+  getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats>;
+  listTraces(options?: { limit?: number; offset?: number }): Promise<TraceSummary[]>;
 }
 
 export interface MonitorOptions {

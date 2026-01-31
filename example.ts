@@ -10,6 +10,12 @@ const memoryStore = {
   },
   async getEvents(requestId: string) {
     return this.events.filter((e: MonitoringEvent) => e.requestId === requestId);
+  },
+  async getStats() {
+    return { totalRequests: 0, totalCost: 0, avgDuration: 0, errorRate: 0 };
+  },
+  async listTraces() {
+    return [];
   }
 };
 
@@ -28,32 +34,69 @@ const ctx = {
   messages: [{ role: "user", content: "Hello Monitor!" }]
 };
 
-// 4. Simulate LLM Lifecycle
+import { createServer } from "node:http";
+import { MonitorDashboard } from "./src/ui/index.js";
+
+// 5. Create Dashboard instance
+const dashboard = new MonitorDashboard(memoryStore as any);
+
+// 6. Start a lightweight server for the dashboard
+const server = createServer(async (req, res) => {
+  const handled = await dashboard.handleRequest(req, res);
+  if (!handled) {
+    res.writeHead(404);
+    res.end("Not Found");
+  }
+});
+
+server.listen(3333, () => {
+  console.log("\n🚀 Monitor Dashboard running at http://localhost:3333/monitor");
+});
+
+// 7. Simulate LLM Lifecycle (repeatedly so we see data in dashboard)
 async function runSimulation() {
-  console.log("--- Starting LLM Simulation ---");
+  console.log("--- Starting LLM Simulation Loop ---");
   
-  await monitor.onRequest(ctx);
-  
-  // Simulate a tool call
-  const tool = { id: "call_1", function: { name: "get_weather" } };
-  await monitor.onToolCallStart(ctx, tool);
-  await monitor.onToolCallEnd(ctx, tool, { temp: 72 });
-  
-  // Final Response
-  const mockResponse = {
-    toString: () => "I am monitored!",
-    usage: { input_tokens: 10, output_tokens: 5, cost: 0.0001 }
-  };
-  await monitor.onResponse(ctx, mockResponse);
-  
-  console.log("\n--- Collected Events in Store ---");
-  console.table(memoryStore.events.map((e: MonitoringEvent) => ({
-    time: e.time.toISOString().split('T')[1],
-    type: e.eventType,
-    model: e.model,
-    cost: e.cost,
-    duration: e.duration
-  })));
+  while(true) {
+    const ctx: any = {
+      requestId: "req_" + Math.random().toString(36).slice(2, 10),
+      provider: "openai",
+      model: Math.random() > 0.5 ? "gpt-4o" : "gpt-4o-mini",
+      state: {},
+      messages: [{ role: "user", content: "Hello Monitor!" }]
+    };
+
+    await monitor.onRequest(ctx);
+    
+    // Simulate thinking/delay
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 500));
+
+    // Simulate tool call
+    if (Math.random() > 0.5) {
+      const tool = { id: "call_" + Math.random().toString(36).slice(2, 6), function: { name: "get_weather" } };
+      await monitor.onToolCallStart(ctx, tool);
+      await new Promise(r => setTimeout(r, 100));
+      await monitor.onToolCallEnd(ctx, tool, { temp: 72 });
+    }
+    
+    // Final Response
+    const mockResponse = {
+      toString: () => "I am monitored!",
+      usage: { 
+        input_tokens: 10, 
+        output_tokens: 5, 
+        cost: ctx.model === "gpt-4o" ? 0.00015 : 0.00001 
+      }
+    };
+    
+    if (Math.random() > 0.9) {
+      await monitor.onError(ctx, new Error("API Connection Failed"));
+    } else {
+      await monitor.onResponse(ctx, mockResponse);
+    }
+
+    await new Promise(r => setTimeout(r, 2000));
+  }
 }
 
 runSimulation();

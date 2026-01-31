@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "example": "node example.ts"
+    "example": "tsx example.ts"
   },
   "keywords": [],
   "author": "",

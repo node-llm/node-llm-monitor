@@ -7,7 +7,9 @@ describe("Monitor Middleware", () => {
     const saveEvent = vi.fn().mockResolvedValue(undefined);
     const store: MonitoringStore = {
       saveEvent,
-      getEvents: vi.fn()
+      getEvents: vi.fn(),
+      getStats: vi.fn(),
+      listTraces: vi.fn()
     };
 
     const monitor = new Monitor({ store });
@@ -29,7 +31,12 @@ describe("Monitor Middleware", () => {
 
   it("should respect captureContent: false (default)", async () => {
     const saveEvent = vi.fn().mockResolvedValue(undefined);
-    const store: MonitoringStore = { saveEvent, getEvents: vi.fn() };
+    const store: MonitoringStore = { 
+      saveEvent, 
+      getEvents: vi.fn(),
+      getStats: vi.fn(),
+      listTraces: vi.fn()
+    };
     const monitor = new Monitor({ store });
 
     const ctx = { requestId: "r", provider: "p", model: "m", state: {} };

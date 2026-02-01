@@ -2,6 +2,19 @@
 
 Advanced, infrastructure-first monitoring for NodeLLM.
 
+![Dashboard Metrics View](docs/images/dashboard-metrics.png)
+
+![Dashboard Traces View](docs/images/dashboard-traces.png)
+
+## Features
+
+- 📊 **Real-time Metrics** - Track requests, costs, latency, and error rates
+- 🔍 **Request Tracing** - Detailed execution flow with tool calls
+- 💰 **Cost Analysis** - Per-provider and per-model cost breakdown
+- 📈 **Time Series Charts** - Visualize trends over time
+- 🔌 **Pluggable Storage** - Memory, File, or Prisma adapters
+- 🛡️ **Privacy First** - Content scrubbing and PII protection
+
 ## Setup
 
 ### 1. Database Schema (Prisma)
@@ -93,16 +106,30 @@ const monitor = new Monitor({ store: new CustomStore() });
 
 ## Dashboard
 
-NodeLLM Monitor includes a high-performance built-in dashboard.
+NodeLLM Monitor includes a high-performance built-in dashboard for real-time observability.
+
+### Metrics View
+
+Track total requests, costs, response times, and error rates at a glance. View usage breakdown by provider and model with interactive time-series charts.
+
+![Metrics Dashboard](docs/images/dashboard-metrics.png)
+
+### Traces View
+
+Inspect individual requests with full execution flow, including tool calls, timing, and request/response content.
+
+![Traces Dashboard](docs/images/dashboard-traces.png)
+
+### Launch the Dashboard
 
 ```ts
-import { MonitorDashboard } from "@node-llm/monitor/ui";
+import { createMonitorMiddleware } from "@node-llm/monitor/ui";
 import express from "express";
 
+// Ensure you use the same adapter instance
 const app = express();
-const dashboard = new MonitorDashboard(prisma);
+app.use("/monitor", createMonitorMiddleware(adapter));
 
-app.use("/monitor", dashboard.middleware());
 app.listen(3000);
 ```
 

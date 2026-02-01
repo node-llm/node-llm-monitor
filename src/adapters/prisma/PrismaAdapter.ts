@@ -3,8 +3,10 @@ import type {
   MonitoringEvent, 
   MonitoringStats, 
   TraceSummary,
-  PaginatedTraces
+  PaginatedTraces,
+  MetricsData
 } from "../../types.js";
+import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
 export class PrismaAdapter implements MonitoringStore {
   constructor(
@@ -62,6 +64,35 @@ export class PrismaAdapter implements MonitoringStore {
       totalCost: totalCostData._sum.cost || 0,
       avgDuration: avgDurationData._avg.duration || 0,
       errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0
+    };
+  }
+
+  async getMetrics(options: { from?: Date; to?: Date } = {}): Promise<MetricsData> {
+    const timeFilter: any = {};
+    if (options.from) timeFilter.gte = options.from;
+    if (options.to) timeFilter.lte = options.to;
+
+    const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
+
+    const [totals, events] = await Promise.all([
+      this.getStats(options),
+      this.model.findMany({
+        where: {
+          ...where,
+          eventType: { in: ["request.end", "request.error"] }
+        },
+        orderBy: { time: "asc" }
+      })
+    ]);
+
+    const builder = new TimeSeriesBuilder();
+    const byProvider = builder.buildProviderStats(events);
+    const timeSeries = builder.build(events);
+
+    return {
+      totals,
+      byProvider,
+      timeSeries
     };
   }
 

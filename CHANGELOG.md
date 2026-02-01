@@ -2,17 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-02-01
+## [0.1.0] - 2026-02-01
 
 ### Features
 
-- **Lazy Adapter Validation**: Refactored `PrismaAdapter` to validate the Prisma client on first use rather than at construction. This improves compatibility with frameworks that initialize database clients asynchronously (e.g., Next.js).
-- **Improved Build scripts**: Updated `dev` and `build` scripts to correctly externalize core peer dependencies.
+- **Initial Release**: Production-grade observability layer for NodeLLM.
+- **Embedded Dashboard**: High-performance Preact-based dashboard for real-time trace analysis.
+- **Stable Adapters**: First-class support for **Prisma**, **In-Memory**, and **File-based** (JSONL) storage.
+- **Middleware Integration**: Native integration with NodeLLM's middleware stack for zero-overhead tracking.
+- **Content Scrubbing**: Integrated PII scrubbers and metadata enrichment utilities.
+- **Lazy Validation**: Smart adapter initialization that supports modern frameworks like Next.js and Fastify.
 
-### Improvements
-
-- **Stability**: Enhanced internal scrubbers and error handling for production environments.
-- **Developer Experience**: Added new integration tests for `PrismaMonitor` and content scrubbing logic.
-### Retractions
-
-- **Experimental Adapters**: Removed Drizzle, Mongoose, and Sequelize adapters to undergo further performance and aggregation testing. They will be reintroduced individually in future releases.

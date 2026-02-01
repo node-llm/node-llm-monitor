@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Production-grade observability and monitoring for NodeLLM.",
+  "publishConfig": {
+    "access": "public"
+  },
   "homepage": "https://node-llm.eshaiju.com",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

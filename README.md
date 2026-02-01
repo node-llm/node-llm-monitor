@@ -11,22 +11,30 @@ Add the following model to your `schema.prisma`:
 ```prisma
 model monitoring_events {
   id             String   @id @default(uuid())
-  event_type     String   // request.start, request.end, tool.start, etc.
-  request_id     String   @index
-  session_id     String?  @index
-  transaction_id String?  @index
+  eventType      String   // request.start, request.end, tool.start, etc.
+  requestId      String   @index
+  sessionId      String?  @index
+  transactionId  String?  @index
   time           DateTime @default(now())
   duration       Int?     // duration in ms
   cost           Float?
-  cpu_time       Float?
-  gc_time        Float?
+  cpuTime        Float?
+  gcTime         Float?
   allocations    Int?
   payload        Json     // Stores metadata, tokens and optional content
-  created_at     DateTime @default(now())
+  createdAt      DateTime @default(now())
   provider       String
   model          String
 }
 ```
+
+Then run the migration to create the table:
+
+```bash
+npx prisma migrate dev --name add_monitoring_events
+```
+
+*Note: For non-Prisma users, a raw SQL migration is available at `migrations/001_create_monitoring_events.sql`.*
 
 ### 2. Integration
 

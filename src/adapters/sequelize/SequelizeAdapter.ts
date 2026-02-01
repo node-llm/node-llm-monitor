@@ -47,9 +47,10 @@ export class SequelizeAdapter implements MonitoringStore {
     const where = this.buildWhereClause(options);
     const { Op } = require("sequelize");
 
-    // Aggregate for total requests and errors
+    // Aggregate for total requests and errors (only count request.end and request.error)
+    const completedWhere = { ...where, eventType: { [Op.in]: ["request.end", "request.error"] } };
     const [totalRequests, errorCount] = await Promise.all([
-      this.model.count({ where }),
+      this.model.count({ where: completedWhere }),
       this.model.count({ where: { ...where, eventType: "request.error" } })
     ]);
 
@@ -113,6 +114,8 @@ export class SequelizeAdapter implements MonitoringStore {
         endTime: e.time,
         duration: e.duration,
         cost: e.cost,
+        cpuTime: e.cpuTime,
+        allocations: e.allocations,
         status: e.eventType === "request.end" ? "success" as const : "error" as const,
       } as any)),
       total,

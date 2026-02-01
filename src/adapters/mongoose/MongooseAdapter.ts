@@ -48,9 +48,10 @@ export class MongooseAdapter implements MonitoringStore {
   async getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats> {
     const query = this.buildQuery(options);
     
-    // Aggregate for total requests and errors
+    // Aggregate for total requests and errors (only count request.end and request.error)
+    const completedQuery = { ...query, eventType: { $in: ["request.end", "request.error"] } };
     const [totalRequests, errorCount] = await Promise.all([
-      this.model.countDocuments(query),
+      this.model.countDocuments(completedQuery),
       this.model.countDocuments({ ...query, eventType: "request.error" })
     ]);
 
@@ -113,6 +114,8 @@ export class MongooseAdapter implements MonitoringStore {
         endTime: e.time,
         duration: e.duration,
         cost: e.cost,
+        cpuTime: e.cpuTime,
+        allocations: e.allocations,
         status: e.eventType === "request.end" ? "success" as const : "error" as const,
       } as any)),
       total,

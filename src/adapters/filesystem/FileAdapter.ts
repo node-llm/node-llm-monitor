@@ -81,6 +81,8 @@ export class FileAdapter implements MonitoringStore {
       endTime: e.time,
       duration: e.duration,
       cost: e.cost,
+      cpuTime: e.cpuTime,
+      allocations: e.allocations,
       status: e.eventType === "request.end" ? "success" as const : "error" as const,
     } as any));
 

@@ -110,6 +110,48 @@ export type CorsConfig =
 
 export interface MonitorOptions {
   store: MonitoringStore;
+  /**
+   * Whether to capture request/response content (prompts, completions).
+   * Default: false (content is not stored)
+   */
   captureContent?: boolean;
+  /**
+   * Content scrubbing configuration.
+   * When captureContent is true, this controls how sensitive data is handled.
+   */
+  scrubbing?: ContentScrubbingOptions;
   onError?: (error: Error, event: MonitoringEvent) => void;
+}
+
+/**
+ * Configuration for content scrubbing/redaction.
+ */
+export interface ContentScrubbingOptions {
+  /**
+   * Enable automatic PII scrubbing (emails, phone numbers, SSN, etc.)
+   * Default: true when captureContent is enabled
+   */
+  pii?: boolean;
+  /**
+   * Enable API key/secret scrubbing
+   * Default: true
+   */
+  secrets?: boolean;
+  /**
+   * Custom patterns to scrub (regex patterns)
+   */
+  customPatterns?: Array<{
+    pattern: RegExp;
+    replacement?: string;
+    name?: string;
+  }>;
+  /**
+   * Fields to completely exclude from capture
+   */
+  excludeFields?: string[];
+  /**
+   * Mask characters to use for redaction
+   * Default: "***"
+   */
+  maskWith?: string;
 }

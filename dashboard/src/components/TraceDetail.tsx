@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MonitoringEvent, TraceSummary } from '../types';
 
 interface TraceDetailProps {
@@ -103,6 +104,9 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
             </p>
           </div>
         )}
+
+        {/* Content Display (Messages & Response) */}
+        <ContentDisplay events={events} />
       </div>
     </div>
   );
@@ -169,6 +173,125 @@ function EventRow({ event, isLast }: EventRowProps) {
           <p className="text-[10px] text-gray-500 mt-1">Duration: {event.duration.toFixed(0)}ms</p>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Component to display captured content (messages and responses)
+ */
+interface ContentDisplayProps {
+  events: MonitoringEvent[];
+}
+
+function ContentDisplay({ events }: ContentDisplayProps) {
+  const [showContent, setShowContent] = useState(false);
+  
+  // Extract content from events
+  const requestStart = events.find(e => e.eventType === 'request.start');
+  const requestEnd = events.find(e => e.eventType === 'request.end');
+  
+  const messages = requestStart?.payload?.messages;
+  const result = requestEnd?.payload?.result;
+  
+  // Check if there's any content to display
+  const hasContent = messages || result;
+  
+  if (!hasContent) {
+    return (
+      <div className="p-3 bg-gray-50/50 rounded-xl border border-monitor-border text-center">
+        <p className="text-xs text-gray-500">
+          💡 Content capture is disabled. Enable <code className="bg-gray-200 px-1 rounded">captureContent: true</code> to see prompts and responses.
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Request & Response</p>
+        <button
+          onClick={() => setShowContent(!showContent)}
+          className="text-xs text-monitor-accent hover:underline"
+        >
+          {showContent ? 'Hide Content' : 'Show Content'}
+        </button>
+      </div>
+      
+      {showContent && (
+        <div className="space-y-3 animate-slide-up">
+          {/* Messages (Input) */}
+          {messages && (
+            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm">📝</span>
+                <p className="text-[10px] text-blue-700 uppercase tracking-wider font-bold">Input Messages</p>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {Array.isArray(messages) ? messages.map((msg: any, index: number) => (
+                  <MessageBubble key={index} message={msg} />
+                )) : (
+                  <pre className="text-xs text-blue-800 whitespace-pre-wrap font-mono bg-blue-100/50 p-2 rounded">
+                    {typeof messages === 'string' ? messages : JSON.stringify(messages, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Result (Output) */}
+          {result && (
+            <div className="p-3 bg-green-50/50 rounded-xl border border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm">🤖</span>
+                <p className="text-[10px] text-green-700 uppercase tracking-wider font-bold">Response</p>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <pre className="text-xs text-green-800 whitespace-pre-wrap font-mono bg-green-100/50 p-2 rounded">
+                  {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Individual message bubble component
+ */
+interface MessageBubbleProps {
+  message: {
+    role?: string;
+    content?: string | any[];
+  };
+}
+
+function MessageBubble({ message }: MessageBubbleProps) {
+  const role = message.role || 'unknown';
+  const content = typeof message.content === 'string' 
+    ? message.content 
+    : Array.isArray(message.content)
+      ? message.content.map((c: any) => c.text || JSON.stringify(c)).join('\n')
+      : JSON.stringify(message.content);
+  
+  const roleConfig: Record<string, { bg: string; label: string }> = {
+    system: { bg: 'bg-purple-100', label: '🔧 System' },
+    user: { bg: 'bg-blue-100', label: '👤 User' },
+    assistant: { bg: 'bg-green-100', label: '🤖 Assistant' },
+    tool: { bg: 'bg-yellow-100', label: '🔧 Tool' },
+    unknown: { bg: 'bg-gray-100', label: '❓ Unknown' },
+  };
+  
+  const config = roleConfig[role] || roleConfig.unknown;
+  
+  return (
+    <div className={`p-2 rounded ${config.bg}`}>
+      <p className="text-[10px] text-gray-600 font-bold mb-1">{config.label}</p>
+      <p className="text-xs text-gray-800 whitespace-pre-wrap">{content}</p>
     </div>
   );
 }

@@ -53,7 +53,7 @@ export class PrismaAdapter implements MonitoringStore {
     const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
     const [totalRequests, totalCostData, avgDurationData, errorCount] = await Promise.all([
-      this.model.count({ where: { ...where, eventType: "request.start" } }),
+      this.model.count({ where: { ...where, eventType: { in: ["request.end", "request.error"] } } }),
       this.model.aggregate({ where, _sum: { cost: true } }),
       this.model.aggregate({ where, _avg: { duration: true } }),
       this.model.count({ where: { ...where, eventType: "request.error" } })

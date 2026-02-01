@@ -4,6 +4,7 @@ import type {
   MonitorOptions, 
   MonitoringEvent 
 } from "./types.js";
+import type { EnhancedMonitoringPayload } from "./metadata.js";
 
 /**
  * Minimal interface for NodeLLM context to ensure type safety without forcing dependencies.
@@ -132,6 +133,106 @@ export class Monitor {
       cost: usage?.cost,
       cpuTime,
       allocations: Math.max(0, allocations)
+    };
+  }
+
+  /**
+   * Helper: Enrich payload with request metadata
+   */
+  enrichWithRequestMetadata(
+    payload: Record<string, any>,
+    options: {
+      streaming?: boolean;
+      requestSizeBytes?: number;
+      responseSizeBytes?: number;
+      promptVersion?: string;
+      templateId?: string;
+    }
+  ): EnhancedMonitoringPayload {
+    const request: Record<string, any> = {};
+    if (options.streaming !== undefined) request.streaming = options.streaming;
+    if (options.requestSizeBytes !== undefined) request.requestSizeBytes = options.requestSizeBytes;
+    if (options.responseSizeBytes !== undefined) request.responseSizeBytes = options.responseSizeBytes;
+    if (options.promptVersion !== undefined) request.promptVersion = options.promptVersion;
+    if (options.templateId !== undefined) request.templateId = options.templateId;
+    
+    return {
+      ...payload,
+      request
+    };
+  }
+
+  /**
+   * Helper: Enrich payload with timing breakdown
+   */
+  enrichWithTiming(
+    payload: Record<string, any>,
+    timing: {
+      queueTime?: number;
+      networkTime?: number;
+      providerLatency?: number;
+      toolTimeTotal?: number;
+      timeToFirstToken?: number;
+    }
+  ): EnhancedMonitoringPayload {
+    return {
+      ...payload,
+      timing
+    };
+  }
+
+  /**
+   * Helper: Enrich payload with environment context
+   */
+  enrichWithEnvironment(
+    payload: Record<string, any>,
+    env: {
+      serviceName?: string;
+      serviceVersion?: string;
+      environment?: 'production' | 'staging' | 'development' | 'test';
+      region?: string;
+    }
+  ): EnhancedMonitoringPayload {
+    return {
+      ...payload,
+      environment: {
+        ...env,
+        nodeVersion: process.version,
+      }
+    };
+  }
+
+  /**
+   * Helper: Enrich payload with retry metadata
+   */
+  enrichWithRetry(
+    payload: Record<string, any>,
+    retry: {
+      retryCount?: number;
+      retryReason?: 'timeout' | 'rate_limit' | 'network' | 'server_error' | 'other';
+      fallbackModel?: string;
+    }
+  ): EnhancedMonitoringPayload {
+    return {
+      ...payload,
+      retry
+    };
+  }
+
+  /**
+   * Helper: Enrich payload with sampling metadata
+   */
+  enrichWithSampling(
+    payload: Record<string, any>,
+    sampling: {
+      samplingRate?: number;
+      sampled?: boolean;
+      samplingReason?: 'high_volume' | 'debug' | 'error' | 'random' | 'always';
+    }
+  ): EnhancedMonitoringPayload {
+    return {
+      ...payload,
+      sampling
     };
   }
 }

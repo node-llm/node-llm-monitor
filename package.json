@@ -1,5 +1,5 @@
 {
-  "name": "llm-monitor",
+  "name": "@node-llm/monitor",
   "version": "1.0.0",
   "type": "module",
   "description": "Production-grade LLM monitoring and observability",
@@ -17,15 +17,36 @@
     "./adapters/prisma": {
       "import": "./dist/adapters/prisma/PrismaAdapter.js",
       "types": "./dist/adapters/prisma/PrismaAdapter.d.ts"
+    },
+    "./adapters/drizzle": {
+      "import": "./dist/adapters/drizzle/DrizzleAdapter.js",
+      "types": "./dist/adapters/drizzle/DrizzleAdapter.d.ts"
+    },
+    "./adapters/sequelize": {
+      "import": "./dist/adapters/sequelize/SequelizeAdapter.js",
+      "types": "./dist/adapters/sequelize/SequelizeAdapter.d.ts"
+    },
+    "./adapters/mongoose": {
+      "import": "./dist/adapters/mongoose/MongooseAdapter.js",
+      "types": "./dist/adapters/mongoose/MongooseAdapter.d.ts"
+    },
+    "./adapters/memory": {
+      "import": "./dist/adapters/memory/MemoryAdapter.js",
+      "types": "./dist/adapters/memory/MemoryAdapter.d.ts"
+    },
+    "./adapters/filesystem": {
+      "import": "./dist/adapters/filesystem/FileAdapter.js",
+      "types": "./dist/adapters/filesystem/FileAdapter.d.ts"
     }
   },
   "files": [
     "dist",
-    "dashboard/build"
+    "dashboard/build",
+    "migrations"
   ],
   "scripts": {
     "build": "npm run build:server && npm run build:dashboard",
-    "build:server": "tsup src/index.ts src/ui/index.ts src/adapters/prisma/PrismaAdapter.ts --format esm --dts --clean",
+    "build:server": "tsup src/index.ts src/ui/index.ts src/adapters/prisma/PrismaAdapter.ts src/adapters/drizzle/DrizzleAdapter.ts src/adapters/sequelize/SequelizeAdapter.ts src/adapters/mongoose/MongooseAdapter.ts src/adapters/memory/MemoryAdapter.ts src/adapters/filesystem/FileAdapter.ts --format esm --dts --clean --external sequelize --external drizzle-orm --external mongoose --external @prisma/client",
     "build:dashboard": "cd dashboard && npm install && npm run build",
     "dev": "tsup src/index.ts src/ui/index.ts --format esm --dts --watch",
     "dev:dashboard": "cd dashboard && npm run dev",
@@ -33,7 +54,7 @@
     "example": "npm run build:server && tsx examples/dashboard.ts",
     "example:metadata": "npm run build:server && tsx examples/dashboard.ts",
     "example:custom": "npm run build:server && tsx examples/custom-adapter.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "llm",
@@ -43,8 +64,12 @@
     "anthropic",
     "langchain"
   ],
-  "author": "",
+  "author": "Eshaiju",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eshaiju/node-llm-monitor.git"
+  },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.3",
     "@types/node": "^25.1.0",

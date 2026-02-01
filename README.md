@@ -52,25 +52,101 @@ const llm = createLLM({
 });
 ```
 
-### 3. Built-in Adapters
+### 3. Other Adapters (Drizzle, Sequelize, Mongoose)
 
-`@node-llm/monitor` comes with several built-in adapters for zero-config setups:
-
-- **Prisma**: Industrial standard for production.
-- **Drizzle**: Modern, high-performance ORM support.
-- **Mongoose**: First-class MongoDB support.
-- **Memory**: Perfect for local testing (clears on restart).
-- **File**: Simple persistence without a database (JSON log).
+NodeLLM Monitor supports almost all major ecosystems.
 
 ```ts
-import { Monitor, createFileMonitor } from "@node-llm/monitor";
+import { Monitor, DrizzleAdapter, SequelizeAdapter, MongooseAdapter } from "@node-llm/monitor";
+```
 
-// 1. In-Memory (Zero persistence)
+<details>
+<summary><b>Drizzle ORM</b></summary>
+
+```ts
+// schema.ts
+import { pgTable, text, timestamp, integer, doublePrecision, jsonb, uuid } from "drizzle-orm/pg-core";
+
+export const monitoringEvents = pgTable("monitoring_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventType: text("eventType").notNull(),
+  requestId: text("requestId").notNull(),
+  sessionId: text("sessionId"),
+  transactionId: text("transactionId"),
+  time: timestamp("time").defaultNow().notNull(),
+  duration: integer("duration"),
+  cost: doublePrecision("cost"),
+  payload: jsonb("payload").notNull().$type<Record<string, any>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+});
+
+// app.ts
+const monitor = new Monitor({
+  store: new DrizzleAdapter(db, monitoringEvents)
+});
+```
+</details>
+
+<details>
+<summary><b>Sequelize</b></summary>
+
+```ts
+// models/MonitoringEvent.ts
+const MonitoringEvent = sequelize.define('monitoring_events', {
+  id: { type: DataTypes.UUID, primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+  eventType: { type: DataTypes.STRING, allowNull: false },
+  requestId: { type: DataTypes.STRING, allowNull: false, index: true },
+  sessionId: { type: DataTypes.STRING, index: true },
+  transactionId: { type: DataTypes.STRING, index: true },
+  time: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, index: true },
+  duration: DataTypes.INTEGER,
+  cost: DataTypes.DOUBLE,
+  payload: { type: DataTypes.JSON, allowNull: false },
+  provider: DataTypes.STRING,
+  model: DataTypes.STRING,
+});
+
+// app.ts
+const monitor = new Monitor({ store: new SequelizeAdapter(MonitoringEvent) });
+```
+</details>
+
+<details>
+<summary><b>Mongoose (MongoDB)</b></summary>
+
+```ts
+// models/MonitoringEvent.ts
+const MonitoringEventSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  eventType: { type: String, required: true, index: true },
+  requestId: { type: String, required: true, index: true },
+  time: { type: Date, default: Date.now, index: true },
+  payload: { type: Schema.Types.Mixed, required: true },
+  provider: String,
+  model: String,
+});
+
+const MonitoringModel = model('MonitoringEvent', MonitoringEventSchema);
+
+// app.ts
+const monitor = new Monitor({ store: new MongooseAdapter(MonitoringModel) });
+```
+</details>
+
+<details>
+<summary><b>Zero-Config (Memory / File)</b></summary>
+
+```ts
+// 1. In-Memory (Great for Dev/CI)
 const monitor = Monitor.memory();
 
-// 2. File-based (Persistence via JSON lines)
+// 2. File-based (Persistent JSON log)
 const monitor = createFileMonitor("monitoring.log");
 ```
+</details>
+
 
 ## Pluggable Storage (Non-Prisma)
 
@@ -126,6 +202,26 @@ const payload = monitor.enrichWithEnvironment({}, {
 
 const result = await llm.chat(messages, { 
   sessionId: "session-123" 
+});
+```
+
+## Generic Usage (Non-NodeLLM)
+
+While optimized as a native middleware for NodeLLM, the monitor is a generic telemetry engine. You can use it manually with any library (Vercel AI SDK, LangChain, or raw OpenAI):
+
+```ts
+const ctx = { requestId: "req_123", provider: "openai", model: "gpt-4" };
+
+// 1. Start tracking
+await monitor.onRequest(ctx);
+
+// 2. Track tool calls
+await monitor.onToolCallStart(ctx, { function: { name: "get_weather" } });
+await monitor.onToolCallEnd(ctx, { result: "22°C" });
+
+// 3. Finalize
+await monitor.onResponse(ctx, {
+  usage: { input_tokens: 100, output_tokens: 50, cost: 0.002 }
 });
 ```
 

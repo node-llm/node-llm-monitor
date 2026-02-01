@@ -30,54 +30,54 @@ export function ProviderTable({ data, loading }: ProviderTableProps) {
   return (
     <div className="glass rounded-2xl border border-monitor-border overflow-hidden">
       <div className="p-4 border-b border-monitor-border">
-        <h3 className="text-sm font-semibold text-white">Usage by Provider/Model</h3>
+        <h3 className="text-sm font-semibold text-gray-900">Usage by Provider/Model</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-monitor-border bg-white/5">
-              <th className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <tr className="border-b border-monitor-border bg-gray-50/50">
+              <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Provider / Model
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Requests
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Cost
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Avg Duration
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">
+              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Errors
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-monitor-border">
             {data.map((row, index) => (
-              <tr key={`${row.provider}-${row.model}-${index}`} className="hover:bg-white/5 transition-colors">
+              <tr key={`${row.provider}-${row.model}-${index}`} className="hover:bg-gray-50/50 transition-colors">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <ProviderIcon provider={row.provider} />
-                    <span className="text-sm text-white font-medium">
+                    <span className="text-sm text-gray-900 font-medium">
                       {row.provider}/{row.model}
                     </span>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-right text-sm text-gray-300">
+                <td className="py-3 px-4 text-right text-sm text-gray-600">
                   {row.requests.toLocaleString()}
                 </td>
-                <td className="py-3 px-4 text-right text-sm text-yellow-400">
+                <td className="py-3 px-4 text-right text-sm text-yellow-600 font-medium">
                   ${row.cost.toFixed(4)}
                 </td>
-                <td className="py-3 px-4 text-right text-sm text-gray-300">
+                <td className="py-3 px-4 text-right text-sm text-gray-600">
                   {row.avgDuration.toFixed(0)}ms
                 </td>
                 <td className="py-3 px-4 text-right">
                   {row.errorCount > 0 ? (
-                    <span className="text-sm text-red-400">{row.errorCount}</span>
+                    <span className="text-sm text-red-600 font-medium">{row.errorCount}</span>
                   ) : (
-                    <span className="text-sm text-green-400">0</span>
+                    <span className="text-sm text-green-600 font-medium">0</span>
                   )}
                 </td>
               </tr>

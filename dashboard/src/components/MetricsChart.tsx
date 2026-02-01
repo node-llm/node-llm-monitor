@@ -32,10 +32,10 @@ export function MetricsChart({ title, data, color, formatter, unit }: MetricsCha
 
   return (
     <div className="glass rounded-2xl border border-monitor-border p-5">
-      <h3 className="text-sm font-semibold text-white mb-4">{title}</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-4">{title}</h3>
       <div className="h-[200px]">
         {chartData.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+          <div className="flex items-center justify-center h-full text-gray-600 text-sm">
             No data available
           </div>
         ) : (
@@ -47,27 +47,27 @@ export function MetricsChart({ title, data, color, formatter, unit }: MetricsCha
                   <stop offset="95%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2e" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
                 dataKey="formattedTime"
                 tick={{ fill: '#6b7280', fontSize: 10 }}
-                axisLine={{ stroke: '#1e1e2e' }}
-                tickLine={{ stroke: '#1e1e2e' }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={{ stroke: '#e5e7eb' }}
               />
               <YAxis
                 tick={{ fill: '#6b7280', fontSize: 10 }}
-                axisLine={{ stroke: '#1e1e2e' }}
-                tickLine={{ stroke: '#1e1e2e' }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={{ stroke: '#e5e7eb' }}
                 tickFormatter={formatValue}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#12121a',
-                  border: '1px solid #1e1e2e',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                 }}
-                labelStyle={{ color: '#9ca3af', fontSize: 12 }}
+                labelStyle={{ color: '#4b5563', fontSize: 12 }}
                 itemStyle={{ color: color }}
                 formatter={(value: number) => [formatValue(value) + (unit || ''), title]}
               />

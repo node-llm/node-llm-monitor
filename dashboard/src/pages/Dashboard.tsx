@@ -13,6 +13,7 @@ type View = 'metrics' | 'traces';
 
 export function Dashboard() {
   const [view, setView] = useState<View>('metrics');
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const {
     metrics,
     traces,
@@ -24,7 +25,7 @@ export function Dashboard() {
     setTimeRange,
     selectTrace,
     refresh,
-  } = useMonitor({ pollInterval: 5000 });
+  } = useMonitor({ pollInterval: autoRefresh ? 5000 : 0 });
 
   const stats = metrics?.totals;
 
@@ -38,7 +39,7 @@ export function Dashboard() {
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               view === 'metrics'
                 ? 'bg-monitor-accent text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
             📊 Metrics
@@ -48,14 +49,29 @@ export function Dashboard() {
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               view === 'traces'
                 ? 'bg-monitor-accent text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
             🔍 Traces
           </button>
         </div>
         
-        <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
+        <div className="flex items-center gap-3">
+          <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
+          
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 ${
+              autoRefresh
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-gray-100 text-gray-600 border border-gray-200'
+            }`}
+            title={autoRefresh ? 'Auto-refresh enabled (5s)' : 'Auto-refresh disabled'}
+          >
+            <span className={autoRefresh ? 'animate-pulse' : ''}>🔄</span>
+            <span className="hidden sm:inline">{autoRefresh ? 'Auto' : 'Manual'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Error Banner */}

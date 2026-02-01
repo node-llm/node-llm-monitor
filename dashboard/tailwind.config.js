@@ -8,9 +8,9 @@ export default {
     extend: {
       colors: {
         'monitor': {
-          'bg': '#0a0a0f',
-          'card': '#12121a',
-          'border': '#1e1e2e',
+          'bg': '#f8f9fa',
+          'card': '#ffffff',
+          'border': '#e5e7eb',
           'accent': '#6366f1',
           'accent-light': '#818cf8',
           'success': '#22c55e',

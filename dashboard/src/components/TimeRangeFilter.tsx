@@ -15,8 +15,8 @@ const ranges: { value: TimeRange; label: string }[] = [
 export function TimeRangeFilter({ value, onChange }: TimeRangeFilterProps) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-500 uppercase tracking-wider">Time Range:</span>
-      <div className="flex gap-1 bg-monitor-card rounded-lg p-1 border border-monitor-border">
+      <span className="text-xs text-gray-600 uppercase tracking-wider">Time Range:</span>
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 border border-monitor-border">
         {ranges.map((range) => (
           <button
             key={range.value}
@@ -24,7 +24,7 @@ export function TimeRangeFilter({ value, onChange }: TimeRangeFilterProps) {
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
               value === range.value
                 ? 'bg-monitor-accent text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white'
             }`}
           >
             {range.label}

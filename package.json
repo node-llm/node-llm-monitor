@@ -32,6 +32,7 @@
     "test": "vitest run",
     "example": "npm run build:server && tsx examples/dashboard.ts",
     "example:metadata": "npm run build:server && tsx examples/dashboard.ts",
+    "example:custom": "npm run build:server && tsx examples/custom-adapter.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

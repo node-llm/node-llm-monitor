@@ -48,6 +48,16 @@ npm run example
 - Aggregates metrics using **TimeSeriesBuilder**
 - Starts a live dashboard at **http://localhost:3333/monitor**
 
+### 4. Run Custom Adapter Example
+```bash
+npm run example:custom
+```
+
+**What it does**:
+- Demonstrates how to use a **non-Prisma** custom store
+- Uses a class-based `SimpleLogStore` implementation
+- Starts a dashboard on **http://localhost:4000/monitor**
+
 ---
 
 ## Development Workflow
@@ -88,18 +98,18 @@ Add to your `schema.prisma`:
 ```prisma
 model monitoring_events {
   id             String   @id @default(uuid())
-  event_type     String
-  request_id     String   @index
-  session_id     String?  @index
-  transaction_id String?  @index
+  eventType      String
+  requestId      String   @index
+  sessionId      String?  @index
+  transactionId  String?  @index
   time           DateTime @default(now())
   duration       Int?
   cost           Float?
-  cpu_time       Float?
-  gc_time        Float?
+  cpuTime        Float?
+  gcTime         Float?
   allocations    Int?
   payload        Json     // Enhanced metadata stored here
-  created_at     DateTime @default(now())
+  createdAt      DateTime @default(now())
   provider       String
   model          String
 }
@@ -113,12 +123,10 @@ npx prisma migrate dev --name add_monitoring_events
 ### 4. Integrate with NodeLLM
 ```typescript
 import { createLLM } from '@node-llm/core';
-import { Monitor } from '@node-llm/monitor';
-import { PrismaAdapter } from '@node-llm/monitor/adapters/prisma';
+import { createPrismaMonitor } from '@node-llm/monitor';
 import { prisma } from './db';
 
-const monitor = new Monitor({
-  store: new PrismaAdapter(prisma),
+const monitor = createPrismaMonitor(prisma, {
   captureContent: false // PII protection
 });
 
@@ -130,22 +138,22 @@ const llm = createLLM({
 // Use enhanced metadata
 const payload = monitor.enrichWithEnvironment({}, {
   environment: 'production',
-  serviceName: 'api',
-  serviceVersion: '1.0.0'
+  serviceName: 'api'
 });
 
 const result = await llm.chat([
   { role: 'user', content: 'Hello' }
-]);
+], { ...payload });
 ```
 
 ### 5. Start Dashboard
 ```typescript
-import { MonitorDashboard } from '@node-llm/monitor/ui';
+import { MonitorDashboard } from '@node-llm/monitor';
 import express from 'express';
+import { prisma } from './db';
 
 const app = express();
-const dashboard = new MonitorDashboard({ store: new PrismaAdapter(prisma) });
+const dashboard = new MonitorDashboard(prisma);
 
 app.use('/monitor', dashboard.middleware());
 app.listen(3000);
@@ -299,7 +307,7 @@ MONITOR_SAMPLING_RATE=0.1  # 10% sampling
 
 1. ✅ Run tests: `npm test`
 2. ✅ Build: `npm run build:server`
-3. ✅ Try examples: `node example.ts`
+3. ✅ Try examples: `npm run example`
 4. ✅ Read docs: `docs/ENHANCED_METADATA.md`
 5. ✅ Integrate with your app
 6. ✅ Deploy dashboard

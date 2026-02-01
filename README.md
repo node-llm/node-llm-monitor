@@ -52,14 +52,24 @@ const llm = createLLM({
 });
 ```
 
-### 3. Zero-Config Development (In-Memory)
+### 3. Built-in Adapters
 
-Perfect for local testing without a database:
+`@node-llm/monitor` comes with several built-in adapters for zero-config setups:
+
+- **Prisma**: Industrial standard for production.
+- **Drizzle**: Modern, high-performance ORM support.
+- **Mongoose**: First-class MongoDB support.
+- **Memory**: Perfect for local testing (clears on restart).
+- **File**: Simple persistence without a database (JSON log).
 
 ```ts
-import { Monitor } from "@node-llm/monitor";
+import { Monitor, createFileMonitor } from "@node-llm/monitor";
 
+// 1. In-Memory (Zero persistence)
 const monitor = Monitor.memory();
+
+// 2. File-based (Persistence via JSON lines)
+const monitor = createFileMonitor("monitoring.log");
 ```
 
 ## Pluggable Storage (Non-Prisma)

@@ -15,3 +15,17 @@ export function createPrismaMonitor(prisma: any, options?: Omit<MonitorOptions, 
     store: new PrismaAdapter(prisma)
   });
 }
+
+/**
+ * Creates a Monitor instance pre-configured with a FileAdapter.
+ * 
+ * @param path - Path to the log file (standard: monitoring.log)
+ * @param options - Additional monitor options
+ */
+export function createFileMonitor(path?: string, options?: Omit<MonitorOptions, 'store'>): Monitor {
+  const { FileAdapter } = require("./adapters/filesystem/FileAdapter.js");
+  return new Monitor({
+    ...options,
+    store: new FileAdapter(path)
+  });
+}

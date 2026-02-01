@@ -5,6 +5,7 @@ import type {
   MonitoringEvent 
 } from "./types.js";
 import type { EnhancedMonitoringPayload } from "./metadata.js";
+import { MemoryAdapter } from "./adapters/memory/MemoryAdapter.js";
 
 /**
  * Minimal interface for NodeLLM context to ensure type safety without forcing dependencies.
@@ -31,22 +32,9 @@ export class Monitor {
    * Seamless creation with In-Memory store (Development/Testing)
    */
   static memory(options?: Omit<MonitorOptions, 'store'>): Monitor {
-    const memoryStore: MonitoringStore = {
-      async saveEvent() {},
-      async getEvents() { return []; },
-      async getStats() { return { totalRequests: 0, totalCost: 0, avgDuration: 0, errorRate: 0 }; },
-      async getMetrics() { 
-        return { 
-          totals: await this.getStats(), 
-          byProvider: [], 
-          timeSeries: { requests: [], cost: [], duration: [], errors: [] }
-        }; 
-      },
-      async listTraces() { return { items: [], total: 0, limit: 50, offset: 0 }; }
-    };
     return new Monitor({
       ...options,
-      store: memoryStore
+      store: new MemoryAdapter()
     });
   }
 

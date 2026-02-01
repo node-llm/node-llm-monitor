@@ -62,6 +62,30 @@ import { Monitor } from "@node-llm/monitor";
 const monitor = Monitor.memory();
 ```
 
+## Pluggable Storage (Non-Prisma)
+
+While `@node-llm/monitor` provides a first-class Prisma adapter, it is designed with a pluggable architecture. You can use any database (PostgreSQL, SQLite, Redis, etc.) by implementing the `MonitoringStore` interface.
+
+### 1. Manual Table Creation
+If you aren't using Prisma, use our raw SQL migration:
+`migrations/001_create_monitoring_events.sql`
+
+### 2. Implement Custom Store
+```ts
+import { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
+
+class CustomStore implements MonitoringStore {
+  async saveEvent(event: MonitoringEvent) {
+    // Your DB logic here: INSERT INTO monitoring_events ...
+  }
+  
+  async getStats() {
+    // Return aggregated stats for the dashboard
+  }
+}
+
+const monitor = new Monitor({ store: new CustomStore() });
+```
 
 ## Dashboard
 

@@ -13,3 +13,6 @@ All notable changes to this project will be documented in this file.
 
 - **Stability**: Enhanced internal scrubbers and error handling for production environments.
 - **Developer Experience**: Added new integration tests for `PrismaMonitor` and content scrubbing logic.
+### Retractions
+
+- **Experimental Adapters**: Removed Drizzle, Mongoose, and Sequelize adapters to undergo further performance and aggregation testing. They will be reintroduced individually in future releases.

@@ -52,100 +52,17 @@ const llm = createLLM({
 });
 ```
 
-### 3. Other Adapters (Drizzle, Sequelize, Mongoose)
-
-NodeLLM Monitor supports almost all major ecosystems.
-
-```ts
-import { Monitor, DrizzleAdapter, SequelizeAdapter, MongooseAdapter } from "@node-llm/monitor";
-```
-
-<details>
-<summary><b>Drizzle ORM</b></summary>
-
-```ts
-// schema.ts
-import { pgTable, text, timestamp, integer, doublePrecision, jsonb, uuid } from "drizzle-orm/pg-core";
-
-export const monitoringEvents = pgTable("monitoring_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  eventType: text("eventType").notNull(),
-  requestId: text("requestId").notNull(),
-  sessionId: text("sessionId"),
-  transactionId: text("transactionId"),
-  time: timestamp("time").defaultNow().notNull(),
-  duration: integer("duration"),
-  cost: doublePrecision("cost"),
-  payload: jsonb("payload").notNull().$type<Record<string, any>>(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  provider: text("provider").notNull(),
-  model: text("model").notNull(),
-});
-
-// app.ts
-const monitor = new Monitor({
-  store: new DrizzleAdapter(db, monitoringEvents)
-});
-```
-</details>
-
-<details>
-<summary><b>Sequelize</b></summary>
-
-```ts
-// models/MonitoringEvent.ts
-const MonitoringEvent = sequelize.define('monitoring_events', {
-  id: { type: DataTypes.UUID, primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-  eventType: { type: DataTypes.STRING, allowNull: false },
-  requestId: { type: DataTypes.STRING, allowNull: false, index: true },
-  sessionId: { type: DataTypes.STRING, index: true },
-  transactionId: { type: DataTypes.STRING, index: true },
-  time: { type: DataTypes.DATE, defaultValue: DataTypes.NOW, index: true },
-  duration: DataTypes.INTEGER,
-  cost: DataTypes.DOUBLE,
-  payload: { type: DataTypes.JSON, allowNull: false },
-  provider: DataTypes.STRING,
-  model: DataTypes.STRING,
-});
-
-// app.ts
-const monitor = new Monitor({ store: new SequelizeAdapter(MonitoringEvent) });
-```
-</details>
-
-<details>
-<summary><b>Mongoose (MongoDB)</b></summary>
-
-```ts
-// models/MonitoringEvent.ts
-const MonitoringEventSchema = new Schema({
-  id: { type: String, required: true, unique: true },
-  eventType: { type: String, required: true, index: true },
-  requestId: { type: String, required: true, index: true },
-  time: { type: Date, default: Date.now, index: true },
-  payload: { type: Schema.Types.Mixed, required: true },
-  provider: String,
-  model: String,
-});
-
-const MonitoringModel = model('MonitoringEvent', MonitoringEventSchema);
-
-// app.ts
-const monitor = new Monitor({ store: new MongooseAdapter(MonitoringModel) });
-```
-</details>
-
-<details>
-<summary><b>Zero-Config (Memory / File)</b></summary>
-
-```ts
-// 1. In-Memory (Great for Dev/CI)
-const monitor = Monitor.memory();
-
-// 2. File-based (Persistent JSON log)
-const monitor = createFileMonitor("monitoring.log");
-```
-</details>
+### 3. Adapters (Memory / File)
+ 
+ NodeLLM Monitor includes built-in adapters for development and logging.
+ 
+ ```ts
+ // 1. In-Memory (Great for Dev/CI)
+ const monitor = Monitor.memory();
+ 
+ // 2. File-based (Persistent JSON log)
+ const monitor = createFileMonitor("monitoring.log");
+ ```
 
 
 ## Pluggable Storage (Non-Prisma)

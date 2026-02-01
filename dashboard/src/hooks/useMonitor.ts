@@ -71,8 +71,8 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     } catch (err) {
       if (mountedRef.current) {
         setError(err instanceof Error ? err : new Error('Failed to fetch data'));
-        // Set default values on error to keep UI functional
-        if (!metrics) setMetrics(DEFAULT_METRICS);
+        // Use functional update to avoid stale closure
+        setMetrics(prev => prev || DEFAULT_METRICS);
       }
     } finally {
       if (mountedRef.current) {
@@ -125,6 +125,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     
     return () => {
       mountedRef.current = false;
+      api.cleanup(); // Cancel pending requests
     };
   }, [fetchData]);
 

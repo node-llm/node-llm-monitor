@@ -2,7 +2,8 @@
   "name": "@node-llm/monitor",
   "version": "1.0.0",
   "type": "module",
-  "description": "Production-grade LLM monitoring and observability",
+  "description": "Production-grade observability and monitoring for NodeLLM.",
+  "homepage": "https://node-llm.eshaiju.com",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -58,17 +59,28 @@
   },
   "keywords": [
     "llm",
+    "large-language-models",
+    "ai",
+    "nodejs",
     "monitoring",
     "observability",
+    "telemetry",
+    "infrastructure",
+    "architecture",
     "openai",
     "anthropic",
-    "langchain"
+    "gemini",
+    "deepseek",
+    "production"
   ],
-  "author": "Eshaiju",
+  "author": "Shaiju Edakulangara",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eshaiju/node-llm-monitor.git"
+    "url": "https://github.com/node-llm/node-llm-monitor"
+  },
+  "bugs": {
+    "url": "https://github.com/node-llm/node-llm-monitor/issues"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.3",
@@ -80,5 +92,13 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici": ">=6.23.0",
+      "lodash": ">=4.17.23",
+      "lodash-es": ">=4.17.23",
+      "esbuild": ">=0.25.0"
+    }
   }
 }

@@ -31,18 +31,59 @@ model monitoring_events {
 ### 2. Integration
 
 ```ts
-import { Monitor } from "@node-llm/monitor";
-import { PrismaAdapter } from "@node-llm/monitor/adapters/prisma";
+import { createPrismaMonitor } from "@node-llm/monitor";
 import { prisma } from "./db";
 
-const monitor = new Monitor({
-  store: new PrismaAdapter(prisma),
+const monitor = createPrismaMonitor(prisma, {
   captureContent: true // Optional: store full prompts/responses
 });
 
 const llm = createLLM({
   provider: "openai",
   middlewares: [monitor]
+});
+```
+
+### 3. Zero-Config Development (In-Memory)
+
+Perfect for local testing without a database:
+
+```ts
+import { Monitor } from "@node-llm/monitor";
+
+const monitor = Monitor.memory();
+```
+
+
+## Dashboard
+
+NodeLLM Monitor includes a high-performance built-in dashboard.
+
+```ts
+import { MonitorDashboard } from "@node-llm/monitor";
+import express from "express";
+
+const app = express();
+const dashboard = new MonitorDashboard(prisma);
+
+app.use("/monitor", dashboard.middleware());
+app.listen(3000);
+```
+
+
+## Operational Metadata
+
+Capture granular operational metrics without changing execution semantics:
+
+```ts
+// Enrich with environment, retries, and timing breakdowns
+const payload = monitor.enrichWithEnvironment({}, {
+  serviceName: "hr-api",
+  environment: "production"
+});
+
+const result = await llm.chat(messages, { 
+  sessionId: "session-123" 
 });
 ```
 

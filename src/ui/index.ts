@@ -60,6 +60,7 @@ export interface MonitorDashboardOptions {
 }
 
 export class MonitorDashboard {
+  private store: MonitoringStore;
   private readonly basePath: string;
   private readonly apiBase: string;
   private readonly staticDir: string;
@@ -67,17 +68,34 @@ export class MonitorDashboard {
   private readonly pollInterval: number;
 
   constructor(
-    private store: MonitoringStore,
+    storeOrPrisma: MonitoringStore | any,
     options: MonitorDashboardOptions = {}
   ) {
+    // Seamless integration: if its not a store but has prisma-like properties, wrap it
+    if (storeOrPrisma && typeof storeOrPrisma.getStats !== 'function' && (storeOrPrisma.monitoring_events || storeOrPrisma.$executeRaw)) {
+      const { PrismaAdapter } = require("../adapters/prisma/PrismaAdapter.js");
+      this.store = new PrismaAdapter(storeOrPrisma);
+    } else {
+      this.store = storeOrPrisma;
+    }
+
     this.basePath = options.basePath ?? "/monitor";
-    // API routes are nested under basePath to avoid collisions
     this.apiBase = `${this.basePath}/api`;
-    // Default to looking for dashboard build in package
     this.staticDir = options.staticDir ?? join(__dirname, "../../dashboard/build");
-    // CORS: same-origin by default (safer for embedded dashboards)
     this.cors = options.cors ?? false;
     this.pollInterval = options.pollInterval ?? 5000;
+  }
+
+  /**
+   * Express-style middleware helper
+   */
+  middleware() {
+    return async (req: MonitorRequest, res: MonitorResponse, next?: () => void) => {
+      const handled = await this.handleRequest(req, res);
+      if (!handled && next) {
+        next();
+      }
+    };
   }
 
   async handleRequest(req: MonitorRequest, res: MonitorResponse): Promise<boolean> {

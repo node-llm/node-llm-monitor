@@ -42,10 +42,16 @@ describe("PrismaAdapter", () => {
   });
 
   describe("constructor", () => {
-    it("should validate Prisma client on construction", () => {
-      expect(() => new PrismaAdapter({})).toThrow(
-        "Prisma model 'monitoring_events' not found"
-      );
+    it("should validate Prisma client on first use", async () => {
+      const adapter = new PrismaAdapter({});
+      
+      // Validation happens on first method call (lazy validation)
+      try {
+        await adapter.getEvents("test");
+        expect(true).toBe(false); // Should not reach here
+      } catch (err) {
+        expect((err as Error).message).toContain("Prisma model 'monitoring_events' not found");
+      }
     });
 
     it("should accept custom table name", () => {

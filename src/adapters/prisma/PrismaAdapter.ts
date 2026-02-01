@@ -9,14 +9,29 @@ import type {
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
 export class PrismaAdapter implements MonitoringStore {
+  private validated = false;
+
   constructor(
     private readonly prisma: any,
     private readonly tableName: string = "monitoring_events"
   ) {
-    this.validatePrismaClient();
+    // Defer validation to first use (lazy validation)
+    // This allows schemas to load asynchronously in frameworks like Next.js
+  }
+
+  private ensureValidated() {
+    if (!this.validated) {
+      if (!this.prisma || typeof this.prisma[this.tableName]?.create !== 'function') {
+        throw new Error(
+          `[PrismaAdapter] Critical: Prisma model '${this.tableName}' not found or incorrectly generated.`
+        );
+      }
+      this.validated = true;
+    }
   }
 
   async saveEvent(event: MonitoringEvent): Promise<void> {
+    this.ensureValidated();
     await this.model.create({
       data: {
         id: event.id,
@@ -39,6 +54,7 @@ export class PrismaAdapter implements MonitoringStore {
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {
+    this.ensureValidated();
     return this.model.findMany({
       where: { requestId },
       orderBy: { time: "asc" }
@@ -46,6 +62,7 @@ export class PrismaAdapter implements MonitoringStore {
   }
 
   async getStats(options: { from?: Date; to?: Date } = {}): Promise<MonitoringStats> {
+    this.ensureValidated();
     const timeFilter: any = {};
     if (options.from) timeFilter.gte = options.from;
     if (options.to) timeFilter.lte = options.to;
@@ -68,6 +85,7 @@ export class PrismaAdapter implements MonitoringStore {
   }
 
   async getMetrics(options: { from?: Date; to?: Date } = {}): Promise<MetricsData> {
+    this.ensureValidated();
     const timeFilter: any = {};
     if (options.from) timeFilter.gte = options.from;
     if (options.to) timeFilter.lte = options.to;
@@ -97,6 +115,7 @@ export class PrismaAdapter implements MonitoringStore {
   }
 
   async listTraces(options: { limit?: number; offset?: number } = {}): Promise<PaginatedTraces> {
+    this.ensureValidated();
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
 
@@ -135,13 +154,5 @@ export class PrismaAdapter implements MonitoringStore {
    */
   private get model() {
     return this.prisma[this.tableName];
-  }
-
-  private validatePrismaClient() {
-    if (!this.prisma || typeof this.prisma[this.tableName]?.create !== 'function') {
-      throw new Error(
-        `[PrismaAdapter] Critical: Prisma model '${this.tableName}' not found or incorrectly generated.`
-      );
-    }
   }
 }

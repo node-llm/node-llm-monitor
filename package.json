@@ -1,6 +1,6 @@
 {
   "name": "@node-llm/monitor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Production-grade observability and monitoring for NodeLLM.",
   "publishConfig": {
@@ -64,6 +64,19 @@
     "deepseek",
     "production"
   ],
+  "peerDependencies": {
+    "@node-llm/core": ">=1.10.0",
+    "@node-llm/orm": ">=0.4.0",
+    "@prisma/client": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@node-llm/orm": {
+      "optional": true
+    },
+    "@prisma/client": {
+      "optional": true
+    }
+  },
   "author": "Shaiju Edakulangara",
   "license": "MIT",
   "repository": {

@@ -30,7 +30,8 @@
     "dev": "tsup src/index.ts src/ui/index.ts --format esm --dts --watch",
     "dev:dashboard": "cd dashboard && npm run dev",
     "test": "vitest run",
-    "example": "npm run build:server && tsx example.ts",
+    "example": "npm run build:server && tsx examples/dashboard.ts",
+    "example:metadata": "npm run build:server && tsx examples/dashboard.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

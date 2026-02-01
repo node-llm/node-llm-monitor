@@ -1,6 +1,6 @@
 {
   "name": "@node-llm/monitor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Production-grade observability and monitoring for NodeLLM.",
   "homepage": "https://node-llm.eshaiju.com",

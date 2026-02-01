@@ -129,6 +129,7 @@ export class MonitorDashboard {
         const stats = await this.store.getStats(timeFilter);
         this.sendJson(res, stats, req);
       } catch (error) {
+        console.error("[MonitorDashboard] Error getting stats:", error);
         this.sendError(res, "Failed to get stats", 500);
       }
       return true;
@@ -156,6 +157,7 @@ export class MonitorDashboard {
           this.sendJson(res, metrics, req);
         }
       } catch (error) {
+        console.error("[MonitorDashboard] Error getting metrics:", error);
         this.sendError(res, "Failed to get metrics", 500);
       }
       return true;
@@ -173,6 +175,7 @@ export class MonitorDashboard {
         const traces = await this.store.listTraces({ limit, offset });
         this.sendJson(res, traces, req);
       } catch (error) {
+        console.error("[MonitorDashboard] Error getting traces:", error);
         this.sendError(res, "Failed to get traces", 500);
       }
       return true;
@@ -436,7 +439,21 @@ export function createMonitoringRouter(store: any, options?: MonitorDashboardOpt
       
       await dashboard.handleRequest(mockReq, mockRes);
       
-      return new Response(mockRes._body, {
+      // Convert Buffer to ArrayBuffer for Web API Response compatibility
+      let body: string | ArrayBuffer;
+      if (mockRes._body instanceof Buffer) {
+        // Create a proper ArrayBuffer from Buffer
+        const arrayBuffer = new ArrayBuffer(mockRes._body.length);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < mockRes._body.length; i++) {
+          view[i] = mockRes._body[i]!;
+        }
+        body = arrayBuffer;
+      } else {
+        body = mockRes._body as string;
+      }
+      
+      return new Response(body, {
         status: mockRes._statusCode,
         headers: mockRes._headers,
       });

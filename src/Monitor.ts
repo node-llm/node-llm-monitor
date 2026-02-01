@@ -112,14 +112,15 @@ export class Monitor {
       ...metrics
     };
 
-    // Non-blocking persistence with error isolation
-    this.store.saveEvent(event).catch(err => {
+    try {
+      await this.store.saveEvent(event);
+    } catch (err: any) {
       if (this.errorHook) {
         this.errorHook(err, event);
       } else {
         console.error(`[NodeLLM-Monitor] Storage Failure (${eventType}):`, err.message);
       }
-    });
+    }
   }
 
   private initializeMetrics(ctx: MinimalContext): void {

@@ -178,7 +178,7 @@ const monitor = new Monitor({ store: new CustomStore() });
 NodeLLM Monitor includes a high-performance built-in dashboard.
 
 ```ts
-import { MonitorDashboard } from "@node-llm/monitor";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
 import express from "express";
 
 const app = express();

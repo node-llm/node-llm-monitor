@@ -9,13 +9,3 @@ export * from "./adapters/filesystem/FileAdapter.js";
 export * from "./adapters/drizzle/DrizzleAdapter.js";
 export * from "./adapters/mongoose/MongooseAdapter.js";
 export * from "./adapters/sequelize/SequelizeAdapter.js";
-
-// UI exports (for convenience)
-export { 
-  MonitorDashboard, 
-  createMonitorMiddleware, 
-  createMonitoringRouter,
-  type MonitorDashboardOptions,
-  type MonitorRequest,
-  type MonitorResponse,
-} from "./ui/index.js";

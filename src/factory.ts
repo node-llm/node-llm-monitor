@@ -1,6 +1,7 @@
 import { Monitor } from "./Monitor.js";
 import type { MonitorOptions } from "./types.js";
 import { PrismaAdapter } from "./adapters/prisma/PrismaAdapter.js";
+import { FileAdapter } from "./adapters/filesystem/FileAdapter.js";
 
 /**
  * Creates a Monitor instance pre-configured with a PrismaAdapter.
@@ -23,7 +24,6 @@ export function createPrismaMonitor(prisma: any, options?: Omit<MonitorOptions, 
  * @param options - Additional monitor options
  */
 export function createFileMonitor(path?: string, options?: Omit<MonitorOptions, 'store'>): Monitor {
-  const { FileAdapter } = require("./adapters/filesystem/FileAdapter.js");
   return new Monitor({
     ...options,
     store: new FileAdapter(path)

@@ -1,10 +1,9 @@
 import type { MonitoringStore, CorsConfig } from "../types.js";
+import { PrismaAdapter } from "../adapters/prisma/PrismaAdapter.js";
 import { existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { join, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 /**
  * Minimal request interface for framework portability.
@@ -73,7 +72,6 @@ export class MonitorDashboard {
   ) {
     // Seamless integration: if its not a store but has prisma-like properties, wrap it
     if (storeOrPrisma && typeof storeOrPrisma.getStats !== 'function' && (storeOrPrisma.monitoring_events || storeOrPrisma.$executeRaw)) {
-      const { PrismaAdapter } = require("../adapters/prisma/PrismaAdapter.js");
       this.store = new PrismaAdapter(storeOrPrisma);
     } else {
       this.store = storeOrPrisma;
@@ -81,7 +79,22 @@ export class MonitorDashboard {
 
     this.basePath = options.basePath ?? "/monitor";
     this.apiBase = `${this.basePath}/api`;
-    this.staticDir = options.staticDir ?? join(__dirname, "../../dashboard/build");
+    
+    // Lazy resolve static directory with fallback for environments like Next.js Server Actions
+    let currentDir = "";
+    try {
+      const url = import.meta.url.toString();
+      if (url.includes("file://")) {
+        // Standardize URL and handle potential prefixing by some bundlers
+        const normalizedUrl = url.substring(url.indexOf("file://"));
+        currentDir = dirname(fileURLToPath(normalizedUrl));
+      }
+    } catch (e) {
+      // Fallback handled by serveStaticFile checking if staticDir exists
+    }
+    
+    this.staticDir = options.staticDir ?? (currentDir ? join(currentDir, "../../dashboard/build") : "");
+    
     this.cors = options.cors ?? false;
     this.pollInterval = options.pollInterval ?? 5000;
   }
@@ -102,6 +115,8 @@ export class MonitorDashboard {
     const host = Array.isArray(req.headers?.host) ? req.headers.host[0] : req.headers?.host;
     const url = new URL(req.url || "", `http://${host || "localhost"}`);
     const pathname = url.pathname;
+    // Normalize for API matching (handle Next.js trailingSlash: true)
+    const matchPath = (pathname.endsWith('/') && pathname.length > 1) ? pathname.slice(0, -1) : pathname;
 
     // Parse time range from query params
     const fromParam = url.searchParams.get("from");
@@ -109,7 +124,7 @@ export class MonitorDashboard {
     const timeFilter = from ? { from } : {};
 
     // API Routes (nested under basePath)
-    if (pathname === `${this.apiBase}/stats`) {
+    if (matchPath === `${this.apiBase}/stats`) {
       try {
         const stats = await this.store.getStats(timeFilter);
         this.sendJson(res, stats, req);
@@ -119,7 +134,7 @@ export class MonitorDashboard {
       return true;
     }
 
-    if (pathname === `${this.apiBase}/metrics`) {
+    if (matchPath === `${this.apiBase}/metrics`) {
       try {
         // Check if store supports getMetrics, otherwise build from getStats
         if (typeof this.store.getMetrics === 'function') {
@@ -146,7 +161,7 @@ export class MonitorDashboard {
       return true;
     }
 
-    if (pathname === `${this.apiBase}/traces`) {
+    if (matchPath === `${this.apiBase}/traces`) {
       // Guard: check if store supports listTraces
       if (typeof this.store.listTraces !== 'function') {
         this.sendJson(res, { items: [], total: 0, limit: 50, offset: 0 }, req);
@@ -163,7 +178,7 @@ export class MonitorDashboard {
       return true;
     }
 
-    if (pathname === `${this.apiBase}/events`) {
+    if (matchPath === `${this.apiBase}/events`) {
       const requestId = url.searchParams.get("requestId");
       if (!requestId) {
         this.sendError(res, "Missing requestId", 400);
@@ -184,7 +199,15 @@ export class MonitorDashboard {
     }
 
     // Serve Dashboard static files
-    if (pathname === this.basePath || pathname === `${this.basePath}/`) {
+    // Redirect to trailing slash to ensure relative assets work
+    if (pathname === this.basePath) {
+      res.writeHead(302, { "Location": `${this.basePath}/` });
+      res.end();
+      return true;
+    }
+
+    if (pathname === `${this.basePath}/`) {
+      // Serve index.html
       return this.serveStaticFile(res, "index.html");
     }
 
@@ -367,7 +390,7 @@ export class MonitorDashboard {
  * app.use(createMonitorMiddleware(store, { basePath: '/monitor' }));
  * ```
  */
-export function createMonitorMiddleware(store: MonitoringStore, options?: MonitorDashboardOptions) {
+export function createMonitorMiddleware(store: any, options?: MonitorDashboardOptions) {
   const dashboard = new MonitorDashboard(store, options);
   
   // Using broader types for framework compatibility (Express, Fastify, etc.)
@@ -393,7 +416,7 @@ export function createMonitorMiddleware(store: MonitoringStore, options?: Monito
  * export const { GET, POST } = createMonitoringRouter(store, { basePath: '/api/monitor' });
  * ```
  */
-export function createMonitoringRouter(store: MonitoringStore, options?: MonitorDashboardOptions) {
+export function createMonitoringRouter(store: any, options?: MonitorDashboardOptions) {
   const dashboard = new MonitorDashboard(store, options);
   
   return {

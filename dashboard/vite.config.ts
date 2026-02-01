@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/monitor/',
+  base: './',
   build: {
     outDir: 'build',
     emptyOutDir: true,

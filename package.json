@@ -47,7 +47,7 @@
   ],
   "scripts": {
     "build": "npm run build:server && npm run build:dashboard",
-    "build:server": "tsup src/index.ts src/ui/index.ts src/adapters/prisma/PrismaAdapter.ts src/adapters/drizzle/DrizzleAdapter.ts src/adapters/sequelize/SequelizeAdapter.ts src/adapters/mongoose/MongooseAdapter.ts src/adapters/memory/MemoryAdapter.ts src/adapters/filesystem/FileAdapter.ts --format esm --dts --clean --external sequelize --external drizzle-orm --external mongoose --external @prisma/client",
+    "build:server": "tsup src/index.ts src/ui/index.ts src/adapters/prisma/PrismaAdapter.ts src/adapters/drizzle/DrizzleAdapter.ts src/adapters/sequelize/SequelizeAdapter.ts src/adapters/mongoose/MongooseAdapter.ts src/adapters/memory/MemoryAdapter.ts src/adapters/filesystem/FileAdapter.ts --format esm --dts --clean --no-splitting --external sequelize --external drizzle-orm --external mongoose --external @prisma/client",
     "build:dashboard": "cd dashboard && npm install && npm run build",
     "dev": "tsup src/index.ts src/ui/index.ts --format esm --dts --watch",
     "dev:dashboard": "cd dashboard && npm run dev",

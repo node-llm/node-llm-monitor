@@ -1,6 +1,6 @@
 import type { MonitoringStats, PaginatedTraces, MonitoringEvent, MetricsData } from '../types';
 
-const API_BASE = '/monitor/api';
+const API_BASE = './api';
 
 
 class ApiError extends Error {

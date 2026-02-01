@@ -1,0 +1,9 @@
+dist
+node_modules
+*.log
+dashboard
+docs
+examples
+.github
+pnpm-lock.yaml
+CHANGELOG.md

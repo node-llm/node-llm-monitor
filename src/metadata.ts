@@ -1,9 +1,9 @@
 /**
  * Enhanced monitoring metadata types.
- * 
+ *
  * These extend the base MonitoringEvent payload with operational metrics
  * that provide deeper observability without affecting execution semantics.
- * 
+ *
  * Design principles:
  * - All fields are optional (best-effort)
  * - No PII or business logic
@@ -34,7 +34,7 @@ export interface RetryMetadata {
   /** Number of retries attempted */
   retryCount?: number;
   /** Reason for retry (timeout, rate_limit, network, etc.) */
-  retryReason?: 'timeout' | 'rate_limit' | 'network' | 'server_error' | 'other';
+  retryReason?: "timeout" | "rate_limit" | "network" | "server_error" | "other";
   /** Fallback model used (if routing/fallback is enabled) */
   fallbackModel?: string;
 }
@@ -62,7 +62,7 @@ export interface ToolMetadata {
   /** Name of the tool being called */
   toolName?: string;
   /** Category for grouping (db, http, fs, internal, etc.) */
-  toolCategory?: 'db' | 'http' | 'fs' | 'internal' | 'llm' | 'other';
+  toolCategory?: "db" | "http" | "fs" | "internal" | "llm" | "other";
   /** Duration of this specific tool call (ms) */
   toolDuration?: number;
   /** Number of retries for this tool */
@@ -92,7 +92,7 @@ export interface SamplingMetadata {
   /** Whether this event was sampled */
   sampled?: boolean;
   /** Reason for sampling decision */
-  samplingReason?: 'high_volume' | 'debug' | 'error' | 'random' | 'always';
+  samplingReason?: "high_volume" | "debug" | "error" | "random" | "always";
 }
 
 /**
@@ -104,7 +104,7 @@ export interface EnvironmentMetadata {
   /** Service version */
   serviceVersion?: string;
   /** Environment (prod, staging, dev) */
-  environment?: 'production' | 'staging' | 'development' | 'test';
+  environment?: "production" | "staging" | "development" | "test";
   /** Cloud region/zone */
   region?: string;
   /** Availability zone */
@@ -120,14 +120,14 @@ export interface SecurityMetadata {
   /** Whether request was blocked */
   blocked?: boolean;
   /** Reason for blocking */
-  blockReason?: 'policy' | 'tool_denied' | 'rate_limit' | 'content' | 'other';
+  blockReason?: "policy" | "tool_denied" | "rate_limit" | "content" | "other";
   /** Whether redaction was applied to content */
   redactionApplied?: boolean;
 }
 
 /**
  * Combined enhanced metadata payload.
- * 
+ *
  * Usage:
  * ```typescript
  * const payload: EnhancedMonitoringPayload = {
@@ -155,7 +155,7 @@ export interface EnhancedMonitoringPayload {
   environment?: EnvironmentMetadata;
   /** Security signals */
   security?: SecurityMetadata;
-  
+
   /** Original payload fields (messages, options, etc.) */
   [key: string]: any;
 }

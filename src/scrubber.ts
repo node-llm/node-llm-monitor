@@ -15,7 +15,7 @@ const PII_PATTERNS = [
   // IP addresses
   { pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, name: "ip_address" },
   // Date of birth patterns
-  { pattern: /\b(?:0?[1-9]|1[0-2])[-/](?:0?[1-9]|[12]\d|3[01])[-/](?:19|20)\d{2}\b/g, name: "dob" },
+  { pattern: /\b(?:0?[1-9]|1[0-2])[-/](?:0?[1-9]|[12]\d|3[01])[-/](?:19|20)\d{2}\b/g, name: "dob" }
 ];
 
 /**
@@ -36,7 +36,7 @@ const SECRET_PATTERNS = [
   // GitHub tokens
   { pattern: /\b(gh[pousr]_[a-zA-Z0-9]{36,})\b/g, name: "github_token" },
   // Private keys (partial)
-  { pattern: /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END/g, name: "private_key" },
+  { pattern: /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END/g, name: "private_key" }
 ];
 
 /**
@@ -52,37 +52,37 @@ export class ContentScrubber {
       secrets: options.secrets ?? true,
       customPatterns: options.customPatterns ?? [],
       excludeFields: options.excludeFields ?? [],
-      maskWith: options.maskWith ?? "[REDACTED]",
+      maskWith: options.maskWith ?? "[REDACTED]"
     };
 
     // Build combined pattern list
     this.allPatterns = [];
-    
+
     if (this.options.pii) {
       this.allPatterns.push(
-        ...PII_PATTERNS.map(p => ({
+        ...PII_PATTERNS.map((p) => ({
           pattern: p.pattern,
           replacement: `[${p.name.toUpperCase()}]`,
-          name: p.name,
+          name: p.name
         }))
       );
     }
-    
+
     if (this.options.secrets) {
       this.allPatterns.push(
-        ...SECRET_PATTERNS.map(p => ({
+        ...SECRET_PATTERNS.map((p) => ({
           pattern: p.pattern,
           replacement: `[${p.name.toUpperCase()}]`,
-          name: p.name,
+          name: p.name
         }))
       );
     }
-    
+
     for (const custom of this.options.customPatterns) {
       this.allPatterns.push({
         pattern: custom.pattern,
         replacement: custom.replacement ?? this.options.maskWith,
-        name: custom.name ?? "custom",
+        name: custom.name ?? "custom"
       });
     }
   }
@@ -92,7 +92,7 @@ export class ContentScrubber {
    */
   scrubString(text: string): string {
     if (!text || typeof text !== "string") return text;
-    
+
     let result = text;
     for (const { pattern, replacement } of this.allPatterns) {
       // Reset lastIndex for global patterns
@@ -108,33 +108,36 @@ export class ContentScrubber {
    */
   scrubObject<T extends Record<string, any>>(obj: T, seen = new WeakSet()): T {
     if (!obj || typeof obj !== "object") return obj;
-    
+
     // Prevent circular references
     if (seen.has(obj)) {
       return "[Circular]" as any;
     }
     seen.add(obj);
-    
+
     const scrubbed: any = Array.isArray(obj) ? [] : {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
       // Skip excluded fields
       if (this.options.excludeFields.includes(key)) {
         scrubbed[key] = this.options.maskWith;
         continue;
       }
-      
+
       // Skip functions and symbols
       if (typeof value === "function" || typeof value === "symbol") {
         continue;
       }
-      
+
       if (typeof value === "string") {
         scrubbed[key] = this.scrubString(value);
       } else if (Array.isArray(value)) {
-        scrubbed[key] = value.map(item => 
-          typeof item === "object" && item !== null ? this.scrubObject(item, seen) : 
-          typeof item === "string" ? this.scrubString(item) : item
+        scrubbed[key] = value.map((item) =>
+          typeof item === "object" && item !== null
+            ? this.scrubObject(item, seen)
+            : typeof item === "string"
+              ? this.scrubString(item)
+              : item
         );
       } else if (value && typeof value === "object") {
         scrubbed[key] = this.scrubObject(value, seen);
@@ -142,7 +145,7 @@ export class ContentScrubber {
         scrubbed[key] = value;
       }
     }
-    
+
     return scrubbed;
   }
 
@@ -151,12 +154,12 @@ export class ContentScrubber {
    */
   scrubMessages(messages: any[]): any[] {
     if (!Array.isArray(messages)) return messages;
-    
-    return messages.map(msg => {
+
+    return messages.map((msg) => {
       if (!msg || typeof msg !== "object") return msg;
-      
+
       const scrubbed: any = { ...msg };
-      
+
       // Scrub content field
       if (typeof scrubbed.content === "string") {
         scrubbed.content = this.scrubString(scrubbed.content);
@@ -167,7 +170,7 @@ export class ContentScrubber {
           return part;
         });
       }
-      
+
       return scrubbed;
     });
   }

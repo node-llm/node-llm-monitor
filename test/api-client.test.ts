@@ -17,14 +17,10 @@ describe("API Client", () => {
     it("should use unique keys for different endpoints", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve({})
       });
 
-      await Promise.all([
-        api.getStats(),
-        api.getMetrics(),
-        api.getTraces(),
-      ]);
+      await Promise.all([api.getStats(), api.getMetrics(), api.getTraces()]);
 
       // Each endpoint should be called once
       expect(global.fetch).toHaveBeenCalledTimes(3);
@@ -33,13 +29,10 @@ describe("API Client", () => {
     it("should use different keys for different requestIds in getEvents", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve([]),
+        json: () => Promise.resolve([])
       });
 
-      await Promise.all([
-        api.getEvents("req-1"),
-        api.getEvents("req-2"),
-      ]);
+      await Promise.all([api.getEvents("req-1"), api.getEvents("req-2")]);
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
@@ -57,7 +50,7 @@ describe("API Client", () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: "Not Found",
+        statusText: "Not Found"
       });
 
       await expect(api.getStats()).rejects.toThrow("HTTP 404: Not Found");
@@ -74,7 +67,7 @@ describe("API Client", () => {
     it("should include time range in query params", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ totalRequests: 0 }),
+        json: () => Promise.resolve({ totalRequests: 0 })
       });
 
       const from = new Date("2024-01-01T00:00:00.000Z");
@@ -87,7 +80,7 @@ describe("API Client", () => {
     it("should include pagination params for traces", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ items: [], total: 0, limit: 10, offset: 20 }),
+        json: () => Promise.resolve({ items: [], total: 0, limit: 10, offset: 20 })
       });
 
       await api.getTraces({ limit: 10, offset: 20 });
@@ -100,7 +93,7 @@ describe("API Client", () => {
     it("should encode requestId in getEvents", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve([]),
+        json: () => Promise.resolve([])
       });
 
       await api.getEvents("req/123");
@@ -114,7 +107,7 @@ describe("API Client", () => {
     it("should pass AbortSignal to fetch", async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve({})
       });
 
       await api.getStats();

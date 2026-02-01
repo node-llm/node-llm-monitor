@@ -34,7 +34,7 @@ Then run the migration to create the table:
 npx prisma migrate dev --name add_monitoring_events
 ```
 
-*Note: For non-Prisma users, a raw SQL migration is available at `migrations/001_create_monitoring_events.sql`.*
+_Note: For non-Prisma users, a raw SQL migration is available at `migrations/001_create_monitoring_events.sql`._
 
 ### 2. Integration
 
@@ -53,27 +53,28 @@ const llm = createLLM({
 ```
 
 ### 3. Adapters (Memory / File)
- 
- NodeLLM Monitor includes built-in adapters for development and logging.
- 
- ```ts
- // 1. In-Memory (Great for Dev/CI)
- const monitor = Monitor.memory();
- 
- // 2. File-based (Persistent JSON log)
- const monitor = createFileMonitor("monitoring.log");
- ```
 
+NodeLLM Monitor includes built-in adapters for development and logging.
+
+```ts
+// 1. In-Memory (Great for Dev/CI)
+const monitor = Monitor.memory();
+
+// 2. File-based (Persistent JSON log)
+const monitor = createFileMonitor("monitoring.log");
+```
 
 ## Pluggable Storage (Non-Prisma)
 
 While `@node-llm/monitor` provides a first-class Prisma adapter, it is designed with a pluggable architecture. You can use any database (PostgreSQL, SQLite, Redis, etc.) by implementing the `MonitoringStore` interface.
 
 ### 1. Manual Table Creation
+
 If you aren't using Prisma, use our raw SQL migration:
 `migrations/001_create_monitoring_events.sql`
 
 ### 2. Implement Custom Store
+
 ```ts
 import { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
 
@@ -81,7 +82,7 @@ class CustomStore implements MonitoringStore {
   async saveEvent(event: MonitoringEvent) {
     // Your DB logic here: INSERT INTO monitoring_events ...
   }
-  
+
   async getStats() {
     // Return aggregated stats for the dashboard
   }
@@ -105,20 +106,22 @@ app.use("/monitor", dashboard.middleware());
 app.listen(3000);
 ```
 
-
 ## Operational Metadata
 
 Capture granular operational metrics without changing execution semantics:
 
 ```ts
 // Enrich with environment, retries, and timing breakdowns
-const payload = monitor.enrichWithEnvironment({}, {
-  serviceName: "hr-api",
-  environment: "production"
-});
+const payload = monitor.enrichWithEnvironment(
+  {},
+  {
+    serviceName: "hr-api",
+    environment: "production"
+  }
+);
 
-const result = await llm.chat(messages, { 
-  sessionId: "session-123" 
+const result = await llm.chat(messages, {
+  sessionId: "session-123"
 });
 ```
 

@@ -39,8 +39,8 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
-  "include": ["src/**/*", "example.ts"],
+  "include": ["src/**/*", "test/**/*", "example.ts", "vite.config.ts"],
   "exclude": ["dashboard", "node_modules", "dist"]
 }

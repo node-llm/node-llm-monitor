@@ -3,9 +3,7 @@ import { TimeSeriesBuilder } from "../src/aggregation/TimeSeriesBuilder.js";
 import type { MonitoringEvent } from "../src/types.js";
 
 describe("TimeSeriesBuilder", () => {
-  const createEvent = (
-    overrides: Partial<MonitoringEvent> = {}
-  ): MonitoringEvent => ({
+  const createEvent = (overrides: Partial<MonitoringEvent> = {}): MonitoringEvent => ({
     id: "evt-" + Math.random(),
     eventType: "request.end",
     requestId: "req-123",
@@ -14,7 +12,7 @@ describe("TimeSeriesBuilder", () => {
     provider: "openai",
     model: "gpt-4",
     payload: {},
-    ...overrides,
+    ...overrides
   });
 
   describe("build", () => {
@@ -36,18 +34,18 @@ describe("TimeSeriesBuilder", () => {
         createEvent({
           time: new Date(baseTime.getTime()),
           duration: 100,
-          cost: 0.01,
+          cost: 0.01
         }),
         createEvent({
           time: new Date(baseTime.getTime() + 2 * 60 * 1000), // +2 min
           duration: 200,
-          cost: 0.02,
+          cost: 0.02
         }),
         createEvent({
           time: new Date(baseTime.getTime() + 6 * 60 * 1000), // +6 min (new bucket)
           duration: 300,
-          cost: 0.03,
-        }),
+          cost: 0.03
+        })
       ];
 
       const result = builder.build(events);
@@ -63,7 +61,7 @@ describe("TimeSeriesBuilder", () => {
 
       const events = [
         createEvent({ time: baseTime, duration: 100 }),
-        createEvent({ time: baseTime, duration: 200 }),
+        createEvent({ time: baseTime, duration: 200 })
       ];
 
       const result = builder.build(events);
@@ -78,7 +76,7 @@ describe("TimeSeriesBuilder", () => {
       const events = [
         createEvent({ time: baseTime, eventType: "request.end" }),
         createEvent({ time: baseTime, eventType: "request.error" }),
-        createEvent({ time: baseTime, eventType: "request.error" }),
+        createEvent({ time: baseTime, eventType: "request.error" })
       ];
 
       const result = builder.build(events);
@@ -94,7 +92,7 @@ describe("TimeSeriesBuilder", () => {
       const events = [
         createEvent({ time: baseTime, cost: 0.01 }),
         createEvent({ time: baseTime, cost: 0.02 }),
-        createEvent({ time: baseTime, cost: 0.03 }),
+        createEvent({ time: baseTime, cost: 0.03 })
       ];
 
       const result = builder.build(events);
@@ -106,9 +104,7 @@ describe("TimeSeriesBuilder", () => {
       const builder = new TimeSeriesBuilder(5 * 60 * 1000);
       const baseTime = new Date("2024-01-01T10:00:00Z");
 
-      const events = [
-        createEvent({ time: baseTime, cost: undefined, duration: undefined }),
-      ];
+      const events = [createEvent({ time: baseTime, cost: undefined, duration: undefined })];
 
       const result = builder.build(events);
 
@@ -123,7 +119,7 @@ describe("TimeSeriesBuilder", () => {
       const events = [
         createEvent({ time: baseTime, eventType: "request.start" }),
         createEvent({ time: baseTime, eventType: "tool.start" }),
-        createEvent({ time: baseTime, eventType: "request.end" }),
+        createEvent({ time: baseTime, eventType: "request.end" })
       ];
 
       const result = builder.build(events);
@@ -139,7 +135,7 @@ describe("TimeSeriesBuilder", () => {
       const events = [
         createEvent({ provider: "openai", model: "gpt-4", cost: 0.01, duration: 100 }),
         createEvent({ provider: "openai", model: "gpt-4", cost: 0.02, duration: 200 }),
-        createEvent({ provider: "anthropic", model: "claude-3", cost: 0.03, duration: 150 }),
+        createEvent({ provider: "anthropic", model: "claude-3", cost: 0.03, duration: 150 })
       ];
 
       const result = builder.buildProviderStats(events);
@@ -164,7 +160,7 @@ describe("TimeSeriesBuilder", () => {
       const events = [
         createEvent({ provider: "openai", model: "gpt-4", eventType: "request.end" }),
         createEvent({ provider: "openai", model: "gpt-4", eventType: "request.error" }),
-        createEvent({ provider: "openai", model: "gpt-4", eventType: "request.error" }),
+        createEvent({ provider: "openai", model: "gpt-4", eventType: "request.error" })
       ];
 
       const result = builder.buildProviderStats(events);
@@ -183,9 +179,7 @@ describe("TimeSeriesBuilder", () => {
     it("should not expose internal _totalDuration field", () => {
       const builder = new TimeSeriesBuilder();
 
-      const events = [
-        createEvent({ provider: "openai", model: "gpt-4", duration: 100 }),
-      ];
+      const events = [createEvent({ provider: "openai", model: "gpt-4", duration: 100 })];
 
       const result = builder.buildProviderStats(events);
 

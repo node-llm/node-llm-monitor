@@ -6,9 +6,7 @@ describe("PrismaAdapter", () => {
   let mockPrisma: any;
   let adapter: PrismaAdapter;
 
-  const createEvent = (
-    overrides: Partial<MonitoringEvent> = {}
-  ): MonitoringEvent => ({
+  const createEvent = (overrides: Partial<MonitoringEvent> = {}): MonitoringEvent => ({
     id: "evt-123",
     eventType: "request.end",
     requestId: "req-123",
@@ -24,7 +22,7 @@ describe("PrismaAdapter", () => {
     createdAt: new Date(),
     provider: "openai",
     model: "gpt-4",
-    ...overrides,
+    ...overrides
   });
 
   beforeEach(() => {
@@ -34,8 +32,8 @@ describe("PrismaAdapter", () => {
         findMany: vi.fn().mockResolvedValue([]),
         count: vi.fn().mockResolvedValue(0),
         aggregate: vi.fn().mockResolvedValue({ _sum: {}, _avg: {} }),
-        groupBy: vi.fn().mockResolvedValue([]),
-      },
+        groupBy: vi.fn().mockResolvedValue([])
+      }
     };
 
     adapter = new PrismaAdapter(mockPrisma);
@@ -44,7 +42,7 @@ describe("PrismaAdapter", () => {
   describe("constructor", () => {
     it("should validate Prisma client on first use", async () => {
       const adapter = new PrismaAdapter({});
-      
+
       // Validation happens on first method call (lazy validation)
       try {
         await adapter.getEvents("test");
@@ -57,8 +55,8 @@ describe("PrismaAdapter", () => {
     it("should accept custom table name", () => {
       const customPrisma = {
         custom_events: {
-          create: vi.fn(),
-        },
+          create: vi.fn()
+        }
       };
 
       expect(() => new PrismaAdapter(customPrisma, "custom_events")).not.toThrow();
@@ -87,8 +85,8 @@ describe("PrismaAdapter", () => {
           payload: event.payload,
           createdAt: event.createdAt,
           provider: event.provider,
-          model: event.model,
-        },
+          model: event.model
+        }
       });
     });
   });
@@ -102,7 +100,7 @@ describe("PrismaAdapter", () => {
 
       expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith({
         where: { requestId: "req-123" },
-        orderBy: { time: "asc" },
+        orderBy: { time: "asc" }
       });
       expect(result).toEqual(events);
     });
@@ -124,7 +122,7 @@ describe("PrismaAdapter", () => {
         totalRequests: 100,
         totalCost: 5.5,
         avgDuration: 250,
-        errorRate: 10,
+        errorRate: 10
       });
     });
 
@@ -135,7 +133,7 @@ describe("PrismaAdapter", () => {
       mockPrisma.monitoring_events.count.mockResolvedValue(0);
       mockPrisma.monitoring_events.aggregate.mockResolvedValue({
         _sum: {},
-        _avg: {},
+        _avg: {}
       });
 
       await adapter.getStats({ from, to });
@@ -143,8 +141,8 @@ describe("PrismaAdapter", () => {
       expect(mockPrisma.monitoring_events.count).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            time: { gte: from, lte: to },
-          }),
+            time: { gte: from, lte: to }
+          })
         })
       );
     });
@@ -153,7 +151,7 @@ describe("PrismaAdapter", () => {
       mockPrisma.monitoring_events.count.mockResolvedValue(0);
       mockPrisma.monitoring_events.aggregate.mockResolvedValue({
         _sum: { cost: null },
-        _avg: { duration: null },
+        _avg: { duration: null }
       });
 
       const result = await adapter.getStats();
@@ -173,20 +171,18 @@ describe("PrismaAdapter", () => {
           provider: "openai",
           model: "gpt-4",
           cost: 0.01,
-          duration: 100,
+          duration: 100
         }),
         createEvent({
           time: new Date(baseTime.getTime() + 6 * 60 * 1000),
           provider: "anthropic",
           model: "claude-3",
           cost: 0.02,
-          duration: 200,
-        }),
+          duration: 200
+        })
       ];
 
-      mockPrisma.monitoring_events.count
-        .mockResolvedValueOnce(2)
-        .mockResolvedValueOnce(0);
+      mockPrisma.monitoring_events.count.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
       mockPrisma.monitoring_events.aggregate
         .mockResolvedValueOnce({ _sum: { cost: 0.03 } })
         .mockResolvedValueOnce({ _avg: { duration: 150 } });
@@ -198,7 +194,7 @@ describe("PrismaAdapter", () => {
         totalRequests: 2,
         totalCost: 0.03,
         avgDuration: 150,
-        errorRate: 0,
+        errorRate: 0
       });
 
       expect(result.byProvider).toHaveLength(2);
@@ -217,7 +213,7 @@ describe("PrismaAdapter", () => {
       mockPrisma.monitoring_events.count.mockResolvedValue(0);
       mockPrisma.monitoring_events.aggregate.mockResolvedValue({
         _sum: {},
-        _avg: {},
+        _avg: {}
       });
       mockPrisma.monitoring_events.findMany.mockResolvedValue([]);
 
@@ -226,8 +222,8 @@ describe("PrismaAdapter", () => {
       expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            time: { gte: from },
-          }),
+            time: { gte: from }
+          })
         })
       );
     });
@@ -236,7 +232,7 @@ describe("PrismaAdapter", () => {
       mockPrisma.monitoring_events.count.mockResolvedValue(0);
       mockPrisma.monitoring_events.aggregate.mockResolvedValue({
         _sum: {},
-        _avg: {},
+        _avg: {}
       });
       mockPrisma.monitoring_events.findMany.mockResolvedValue([]);
 
@@ -251,7 +247,7 @@ describe("PrismaAdapter", () => {
     it("should return paginated traces", async () => {
       const events = [
         createEvent({ eventType: "request.end", duration: 100 }),
-        createEvent({ eventType: "request.error", duration: 200 }),
+        createEvent({ eventType: "request.error", duration: 200 })
       ];
 
       mockPrisma.monitoring_events.findMany.mockResolvedValue(events);
@@ -276,7 +272,7 @@ describe("PrismaAdapter", () => {
       expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 50,
-          skip: 0,
+          skip: 0
         })
       );
       expect(result.limit).toBe(50);

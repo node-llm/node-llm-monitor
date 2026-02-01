@@ -13,14 +13,9 @@ describe("ContentScrubber", () => {
 
     it("should scrub phone numbers in various formats", () => {
       const scrubber = new ContentScrubber();
-      const formats = [
-        "(555) 123-4567",
-        "555-123-4567",
-        "555.123.4567",
-        "+1 (555) 123-4567",
-      ];
+      const formats = ["(555) 123-4567", "555-123-4567", "555.123.4567", "+1 (555) 123-4567"];
 
-      formats.forEach(format => {
+      formats.forEach((format) => {
         const result = scrubber.scrubString(`Call me at ${format}`);
         expect(result).toContain("[PHONE]");
         expect(result).not.toContain(format);
@@ -92,10 +87,8 @@ describe("ContentScrubber", () => {
 
     it("should use custom mask text for custom patterns", () => {
       const scrubber = new ContentScrubber({
-        customPatterns: [
-          { pattern: /custom_secret_\w+/g, name: "custom" },
-        ],
-        maskWith: "***HIDDEN***",
+        customPatterns: [{ pattern: /custom_secret_\w+/g, name: "custom" }],
+        maskWith: "***HIDDEN***"
       });
       const text = "secret: custom_secret_abc123";
       const result = scrubber.scrubString(text);
@@ -116,7 +109,8 @@ describe("ContentScrubber", () => {
 
     it("should scrub multiple matches in single string", () => {
       const scrubber = new ContentScrubber();
-      const text = "Email: john@example.com and phone: 555-123-4567 with key sk-1234567890abcdefghij";
+      const text =
+        "Email: john@example.com and phone: 555-123-4567 with key sk-1234567890abcdefghij";
       const result = scrubber.scrubString(text);
       expect(result).toContain("[EMAIL]");
       expect(result).toContain("[PHONE]");
@@ -129,7 +123,7 @@ describe("ContentScrubber", () => {
       const scrubber = new ContentScrubber();
       const obj = {
         email: "test@example.com",
-        name: "John Doe",
+        name: "John Doe"
       };
       const result = scrubber.scrubObject(obj);
       expect(result.email).toContain("[EMAIL]");
@@ -142,9 +136,9 @@ describe("ContentScrubber", () => {
         user: {
           email: "test@example.com",
           profile: {
-            phone: "555-123-4567",
-          },
-        },
+            phone: "555-123-4567"
+          }
+        }
       };
       const result = scrubber.scrubObject(obj);
       expect(result.user.email).toContain("[EMAIL]");
@@ -154,7 +148,7 @@ describe("ContentScrubber", () => {
     it("should scrub arrays of strings", () => {
       const scrubber = new ContentScrubber();
       const obj = {
-        emails: ["john@example.com", "jane@example.com"],
+        emails: ["john@example.com", "jane@example.com"]
       };
       const result = scrubber.scrubObject(obj);
       expect(result.emails[0]).toContain("[EMAIL]");
@@ -164,10 +158,7 @@ describe("ContentScrubber", () => {
     it("should scrub arrays of objects", () => {
       const scrubber = new ContentScrubber();
       const obj = {
-        users: [
-          { email: "john@example.com" },
-          { email: "jane@example.com" },
-        ],
+        users: [{ email: "john@example.com" }, { email: "jane@example.com" }]
       };
       const result = scrubber.scrubObject(obj);
       expect(result.users[0].email).toContain("[EMAIL]");
@@ -178,7 +169,7 @@ describe("ContentScrubber", () => {
       const scrubber = new ContentScrubber();
       const obj: any = {
         email: "test@example.com",
-        self: null,
+        self: null
       };
       obj.self = obj; // Create circular reference
 
@@ -192,7 +183,7 @@ describe("ContentScrubber", () => {
       const scrubber = new ContentScrubber({ excludeFields: ["password"] });
       const obj = {
         email: "test@example.com",
-        password: "secret123",
+        password: "secret123"
       };
       const result = scrubber.scrubObject(obj);
       expect(result.email).toContain("[EMAIL]");
@@ -204,7 +195,7 @@ describe("ContentScrubber", () => {
       const obj = {
         email: "test@example.com",
         fn: () => "test",
-        sym: Symbol("test"),
+        sym: Symbol("test")
       };
       const result = scrubber.scrubObject(obj);
       expect(result.email).toContain("[EMAIL]");
@@ -217,7 +208,7 @@ describe("ContentScrubber", () => {
       const obj = {
         count: 42,
         active: true,
-        value: null,
+        value: null
       };
       const result = scrubber.scrubObject(obj);
       expect(result.count).toBe(42);
@@ -235,11 +226,7 @@ describe("ContentScrubber", () => {
     it("should preserve array structure", () => {
       const scrubber = new ContentScrubber();
       const obj = {
-        items: [
-          "test@example.com",
-          "safe text",
-          { email: "another@example.com" },
-        ],
+        items: ["test@example.com", "safe text", { email: "another@example.com" }]
       };
       const result = scrubber.scrubObject(obj);
       expect(Array.isArray(result.items)).toBe(true);
@@ -255,7 +242,7 @@ describe("ContentScrubber", () => {
       const scrubber = new ContentScrubber();
       const messages = [
         { role: "user", content: "My email is test@example.com" },
-        { role: "assistant", content: "Got it, your API key is sk-1234567890abcdefghij" },
+        { role: "assistant", content: "Got it, your API key is sk-1234567890abcdefghij" }
       ];
       const result = scrubber.scrubMessages(messages);
       expect(result[0].content).toContain("[EMAIL]");
@@ -269,9 +256,9 @@ describe("ContentScrubber", () => {
           role: "user",
           content: [
             { type: "text", text: "Email: test@example.com" },
-            { type: "image", url: "https://example.com/image.jpg" },
-          ],
-        },
+            { type: "image", url: "https://example.com/image.jpg" }
+          ]
+        }
       ];
       const result = scrubber.scrubMessages(messages);
       expect(result[0].content[0].text).toContain("[EMAIL]");
@@ -282,7 +269,7 @@ describe("ContentScrubber", () => {
       const scrubber = new ContentScrubber();
       const messages = [
         { role: "user", content: "Normal text" },
-        { role: "assistant", content: null },
+        { role: "assistant", content: null }
       ];
       const result = scrubber.scrubMessages(messages);
       expect(result[0].content).toBe("Normal text");
@@ -302,8 +289,8 @@ describe("ContentScrubber", () => {
           role: "user",
           content: "test@example.com",
           timestamp: 1234567890,
-          metadata: { key: "value" },
-        },
+          metadata: { key: "value" }
+        }
       ];
       const result = scrubber.scrubMessages(messages);
       expect(result[0].role).toBe("user");
@@ -319,9 +306,9 @@ describe("ContentScrubber", () => {
           role: "user",
           content: [
             "Direct text with test@example.com",
-            { type: "text", text: "Text with phone 555-123-4567" },
-          ],
-        },
+            { type: "text", text: "Text with phone 555-123-4567" }
+          ]
+        }
       ];
       const result = scrubber.scrubMessages(messages);
       expect(result[0].content[0]).toContain("[EMAIL]");
@@ -333,8 +320,8 @@ describe("ContentScrubber", () => {
     it("should support custom patterns", () => {
       const scrubber = new ContentScrubber({
         customPatterns: [
-          { pattern: /\buser_id:\s*(\d+)/g, name: "user_id", replacement: "[USER_ID]" },
-        ],
+          { pattern: /\buser_id:\s*(\d+)/g, name: "user_id", replacement: "[USER_ID]" }
+        ]
       });
       const text = "Request from user_id: 12345";
       const result = scrubber.scrubString(text);
@@ -344,9 +331,7 @@ describe("ContentScrubber", () => {
 
     it("should use custom replacement text", () => {
       const scrubber = new ContentScrubber({
-        customPatterns: [
-          { pattern: /secret_token_\w+/g, name: "token", replacement: "***" },
-        ],
+        customPatterns: [{ pattern: /secret_token_\w+/g, name: "token", replacement: "***" }]
       });
       const text = "token: secret_token_abc123";
       const result = scrubber.scrubString(text);
@@ -357,8 +342,8 @@ describe("ContentScrubber", () => {
     it("should combine built-in and custom patterns", () => {
       const scrubber = new ContentScrubber({
         customPatterns: [
-          { pattern: /internal_id:\s*(\d+)/g, name: "internal_id", replacement: "[INTERNAL_ID]" },
-        ],
+          { pattern: /internal_id:\s*(\d+)/g, name: "internal_id", replacement: "[INTERNAL_ID]" }
+        ]
       });
       const text = "Email: test@example.com and internal_id: 999";
       const result = scrubber.scrubString(text);

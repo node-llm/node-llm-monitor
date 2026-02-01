@@ -38,7 +38,7 @@ const MIME_TYPES: Record<string, string> = {
   ".woff": "font/woff",
   ".woff2": "font/woff2",
   ".ttf": "font/ttf",
-  ".eot": "application/vnd.ms-fontobject",
+  ".eot": "application/vnd.ms-fontobject"
 };
 
 export interface MonitorDashboardOptions {
@@ -46,7 +46,7 @@ export interface MonitorDashboardOptions {
   basePath?: string;
   /** Path to the static dashboard build folder */
   staticDir?: string;
-  /** 
+  /**
    * CORS configuration for API endpoints.
    * - false: same-origin only (default, recommended for embedded dashboards)
    * - true: allow all origins
@@ -66,12 +66,13 @@ export class MonitorDashboard {
   private readonly cors: CorsConfig;
   private readonly pollInterval: number;
 
-  constructor(
-    storeOrPrisma: MonitoringStore | any,
-    options: MonitorDashboardOptions = {}
-  ) {
+  constructor(storeOrPrisma: MonitoringStore | any, options: MonitorDashboardOptions = {}) {
     // Seamless integration: if its not a store but has prisma-like properties, wrap it
-    if (storeOrPrisma && typeof storeOrPrisma.getStats !== 'function' && (storeOrPrisma.monitoring_events || storeOrPrisma.$executeRaw)) {
+    if (
+      storeOrPrisma &&
+      typeof storeOrPrisma.getStats !== "function" &&
+      (storeOrPrisma.monitoring_events || storeOrPrisma.$executeRaw)
+    ) {
       this.store = new PrismaAdapter(storeOrPrisma);
     } else {
       this.store = storeOrPrisma;
@@ -79,7 +80,7 @@ export class MonitorDashboard {
 
     this.basePath = options.basePath ?? "/monitor";
     this.apiBase = `${this.basePath}/api`;
-    
+
     // Lazy resolve static directory with fallback for environments like Next.js Server Actions
     let currentDir = "";
     try {
@@ -92,9 +93,10 @@ export class MonitorDashboard {
     } catch (e) {
       // Fallback handled by serveStaticFile checking if staticDir exists
     }
-    
-    this.staticDir = options.staticDir ?? (currentDir ? join(currentDir, "../../dashboard/build") : "");
-    
+
+    this.staticDir =
+      options.staticDir ?? (currentDir ? join(currentDir, "../../dashboard/build") : "");
+
     this.cors = options.cors ?? false;
     this.pollInterval = options.pollInterval ?? 5000;
   }
@@ -116,7 +118,8 @@ export class MonitorDashboard {
     const url = new URL(req.url || "", `http://${host || "localhost"}`);
     const pathname = url.pathname;
     // Normalize for API matching (handle Next.js trailingSlash: true)
-    const matchPath = (pathname.endsWith('/') && pathname.length > 1) ? pathname.slice(0, -1) : pathname;
+    const matchPath =
+      pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
 
     // Parse time range from query params
     const fromParam = url.searchParams.get("from");
@@ -138,7 +141,7 @@ export class MonitorDashboard {
     if (matchPath === `${this.apiBase}/metrics`) {
       try {
         // Check if store supports getMetrics, otherwise build from getStats
-        if (typeof this.store.getMetrics === 'function') {
+        if (typeof this.store.getMetrics === "function") {
           const metrics = await this.store.getMetrics(timeFilter);
           this.sendJson(res, metrics, req);
         } else {
@@ -151,8 +154,8 @@ export class MonitorDashboard {
               requests: [],
               cost: [],
               duration: [],
-              errors: [],
-            },
+              errors: []
+            }
           };
           this.sendJson(res, metrics, req);
         }
@@ -165,7 +168,7 @@ export class MonitorDashboard {
 
     if (matchPath === `${this.apiBase}/traces`) {
       // Guard: check if store supports listTraces
-      if (typeof this.store.listTraces !== 'function') {
+      if (typeof this.store.listTraces !== "function") {
         this.sendJson(res, { items: [], total: 0, limit: 50, offset: 0 }, req);
         return true;
       }
@@ -188,7 +191,7 @@ export class MonitorDashboard {
         return true;
       }
       // Guard: check if store supports getEvents
-      if (typeof this.store.getEvents !== 'function') {
+      if (typeof this.store.getEvents !== "function") {
         this.sendJson(res, [], req);
         return true;
       }
@@ -204,7 +207,7 @@ export class MonitorDashboard {
     // Serve Dashboard static files
     // Redirect to trailing slash to ensure relative assets work
     if (pathname === this.basePath) {
-      res.writeHead(302, { "Location": `${this.basePath}/` });
+      res.writeHead(302, { Location: `${this.basePath}/` });
       res.end();
       return true;
     }
@@ -234,7 +237,7 @@ export class MonitorDashboard {
       if (existsSync(indexPath)) {
         return this.serveFile(res, indexPath, ".html");
       }
-      
+
       // Fallback: serve simple message if static build not available
       res.writeHead(200, { "Content-Type": "text/html" });
       res.end(this.getFallbackHtml());
@@ -247,12 +250,12 @@ export class MonitorDashboard {
 
   private async serveFile(res: MonitorResponse, fullPath: string, ext: string): Promise<boolean> {
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
-    
+
     try {
       const content = await readFile(fullPath);
       res.writeHead(200, {
         "Content-Type": contentType,
-        "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000",
+        "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000"
       });
       res.end(content);
       return true;
@@ -263,14 +266,14 @@ export class MonitorDashboard {
   }
 
   private sendJson(res: MonitorResponse, data: unknown, req?: MonitorRequest) {
-    const headers: Record<string, string> = { 
-      "Content-Type": "application/json",
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
     };
-    
+
     // Apply CORS headers based on configuration
     const corsHeaders = this.getCorsHeaders(req);
     Object.assign(headers, corsHeaders);
-    
+
     res.writeHead(200, headers);
     res.end(JSON.stringify(data));
   }
@@ -285,32 +288,32 @@ export class MonitorDashboard {
       // Same-origin only, no CORS headers needed
       return {};
     }
-    
+
     if (this.cors === true) {
       return { "Access-Control-Allow-Origin": "*" };
     }
-    
+
     if (typeof this.cors === "string") {
       return { "Access-Control-Allow-Origin": this.cors };
     }
-    
+
     if (Array.isArray(this.cors)) {
-      const origin = Array.isArray(req?.headers?.origin) 
-        ? req.headers.origin[0] 
+      const origin = Array.isArray(req?.headers?.origin)
+        ? req.headers.origin[0]
         : req?.headers?.origin;
       if (origin && this.cors.includes(origin)) {
         return { "Access-Control-Allow-Origin": origin };
       }
       return {};
     }
-    
+
     // Object config with origin and credentials
     const config = this.cors;
-    const origin = Array.isArray(req?.headers?.origin) 
-      ? req.headers.origin[0] 
+    const origin = Array.isArray(req?.headers?.origin)
+      ? req.headers.origin[0]
       : req?.headers?.origin;
     const allowedOrigins = Array.isArray(config.origin) ? config.origin : [config.origin];
-    
+
     if (origin && allowedOrigins.includes(origin)) {
       const headers: Record<string, string> = { "Access-Control-Allow-Origin": origin };
       if (config.credentials) {
@@ -318,7 +321,7 @@ export class MonitorDashboard {
       }
       return headers;
     }
-    
+
     return {};
   }
 
@@ -387,7 +390,7 @@ export class MonitorDashboard {
 
 /**
  * Express/Connect compatible middleware factory.
- * 
+ *
  * @example
  * ```ts
  * app.use(createMonitorMiddleware(store, { basePath: '/monitor' }));
@@ -395,13 +398,9 @@ export class MonitorDashboard {
  */
 export function createMonitorMiddleware(store: any, options?: MonitorDashboardOptions) {
   const dashboard = new MonitorDashboard(store, options);
-  
+
   // Using broader types for framework compatibility (Express, Fastify, etc.)
-  return async (
-    req: MonitorRequest, 
-    res: MonitorResponse, 
-    next?: () => void
-  ) => {
+  return async (req: MonitorRequest, res: MonitorResponse, next?: () => void) => {
     const handled = await dashboard.handleRequest(req, res);
     if (!handled && next) {
       next();
@@ -411,7 +410,7 @@ export function createMonitorMiddleware(store: any, options?: MonitorDashboardOp
 
 /**
  * Factory for Next.js API route handlers.
- * 
+ *
  * @example
  * ```ts
  * // app/api/monitor/[...path]/route.ts
@@ -421,24 +420,24 @@ export function createMonitorMiddleware(store: any, options?: MonitorDashboardOp
  */
 export function createMonitoringRouter(store: any, options?: MonitorDashboardOptions) {
   const dashboard = new MonitorDashboard(store, options);
-  
+
   return {
     async GET(req: Request) {
       const url = new URL(req.url);
       const mockRes = createMockResponse();
-      
+
       // Adapt Web Request to MonitorRequest
       const mockReq: MonitorRequest = {
         url: url.pathname + url.search,
-        headers: { 
+        headers: {
           host: url.host,
-          origin: req.headers.get("origin") ?? undefined,
+          origin: req.headers.get("origin") ?? undefined
         },
-        method: req.method,
+        method: req.method
       };
-      
+
       await dashboard.handleRequest(mockReq, mockRes);
-      
+
       // Convert Buffer to ArrayBuffer for Web API Response compatibility
       let body: string | ArrayBuffer;
       if (mockRes._body instanceof Buffer) {
@@ -452,20 +451,20 @@ export function createMonitoringRouter(store: any, options?: MonitorDashboardOpt
       } else {
         body = mockRes._body as string;
       }
-      
+
       return new Response(body, {
         status: mockRes._statusCode,
-        headers: mockRes._headers,
+        headers: mockRes._headers
       });
     },
-    
+
     async POST(req: Request) {
       // For future event ingestion endpoint
       return new Response(JSON.stringify({ error: "Not implemented" }), {
         status: 501,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
-    },
+    }
   };
 }
 
@@ -480,18 +479,18 @@ function createMockResponse(): MockResponse {
     _statusCode: 200,
     _headers: {},
     _body: "",
-    
+
     writeHead(code: number, headers?: Record<string, string>) {
       res._statusCode = code;
       if (headers) {
         Object.assign(res._headers, headers);
       }
     },
-    
+
     end(body?: string | Buffer) {
       res._body = body ?? "";
-    },
+    }
   };
-  
+
   return res;
 }

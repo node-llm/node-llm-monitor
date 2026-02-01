@@ -9,15 +9,15 @@ describe("Enhanced Metadata", () => {
       totalRequests: 0,
       totalCost: 0,
       avgDuration: 0,
-      errorRate: 0,
-    }),
+      errorRate: 0
+    })
   });
 
   const createContext = () => ({
     requestId: "req-123",
     provider: "openai",
     model: "gpt-4",
-    state: {},
+    state: {}
   });
 
   describe("enrichWithRequestMetadata", () => {
@@ -31,7 +31,7 @@ describe("Enhanced Metadata", () => {
         requestSizeBytes: 1024,
         responseSizeBytes: 2048,
         promptVersion: "v1.2.3",
-        templateId: "template-abc",
+        templateId: "template-abc"
       });
 
       expect(enriched.foo).toBe("bar");
@@ -40,7 +40,7 @@ describe("Enhanced Metadata", () => {
         requestSizeBytes: 1024,
         responseSizeBytes: 2048,
         promptVersion: "v1.2.3",
-        templateId: "template-abc",
+        templateId: "template-abc"
       });
     });
 
@@ -48,13 +48,16 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithRequestMetadata({}, {
-        streaming: true,
-        // Other fields undefined
-      });
+      const enriched = monitor.enrichWithRequestMetadata(
+        {},
+        {
+          streaming: true
+          // Other fields undefined
+        }
+      );
 
       expect(enriched.request).toEqual({
-        streaming: true,
+        streaming: true
       });
       expect(enriched.request).not.toHaveProperty("requestSizeBytes");
     });
@@ -74,20 +77,23 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithTiming({}, {
-        queueTime: 10,
-        networkTime: 50,
-        providerLatency: 200,
-        toolTimeTotal: 100,
-        timeToFirstToken: 150,
-      });
+      const enriched = monitor.enrichWithTiming(
+        {},
+        {
+          queueTime: 10,
+          networkTime: 50,
+          providerLatency: 200,
+          toolTimeTotal: 100,
+          timeToFirstToken: 150
+        }
+      );
 
       expect(enriched.timing).toEqual({
         queueTime: 10,
         networkTime: 50,
         providerLatency: 200,
         toolTimeTotal: 100,
-        timeToFirstToken: 150,
+        timeToFirstToken: 150
       });
     });
 
@@ -95,14 +101,17 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithTiming({}, {
-        networkTime: 50,
-        providerLatency: 200,
-      });
+      const enriched = monitor.enrichWithTiming(
+        {},
+        {
+          networkTime: 50,
+          providerLatency: 200
+        }
+      );
 
       expect(enriched.timing).toEqual({
         networkTime: 50,
-        providerLatency: 200,
+        providerLatency: 200
       });
     });
   });
@@ -112,19 +121,22 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithEnvironment({}, {
-        serviceName: "api-service",
-        serviceVersion: "1.2.3",
-        environment: "production",
-        region: "us-east-1",
-      });
+      const enriched = monitor.enrichWithEnvironment(
+        {},
+        {
+          serviceName: "api-service",
+          serviceVersion: "1.2.3",
+          environment: "production",
+          region: "us-east-1"
+        }
+      );
 
       expect(enriched.environment).toEqual({
         serviceName: "api-service",
         serviceVersion: "1.2.3",
         environment: "production",
         region: "us-east-1",
-        nodeVersion: process.version,
+        nodeVersion: process.version
       });
     });
 
@@ -135,7 +147,7 @@ describe("Enhanced Metadata", () => {
       const enriched = monitor.enrichWithEnvironment({}, {});
 
       expect(enriched.environment).toEqual({
-        nodeVersion: process.version,
+        nodeVersion: process.version
       });
     });
   });
@@ -145,16 +157,19 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithRetry({}, {
-        retryCount: 3,
-        retryReason: "rate_limit",
-        fallbackModel: "gpt-3.5-turbo",
-      });
+      const enriched = monitor.enrichWithRetry(
+        {},
+        {
+          retryCount: 3,
+          retryReason: "rate_limit",
+          fallbackModel: "gpt-3.5-turbo"
+        }
+      );
 
       expect(enriched.retry).toEqual({
         retryCount: 3,
         retryReason: "rate_limit",
-        fallbackModel: "gpt-3.5-turbo",
+        fallbackModel: "gpt-3.5-turbo"
       });
     });
 
@@ -165,10 +180,13 @@ describe("Enhanced Metadata", () => {
       const reasons = ["timeout", "rate_limit", "network", "server_error", "other"] as const;
 
       reasons.forEach((reason) => {
-        const enriched = monitor.enrichWithRetry({}, {
-          retryCount: 1,
-          retryReason: reason,
-        });
+        const enriched = monitor.enrichWithRetry(
+          {},
+          {
+            retryCount: 1,
+            retryReason: reason
+          }
+        );
 
         expect(enriched.retry?.retryReason).toBe(reason);
       });
@@ -180,16 +198,19 @@ describe("Enhanced Metadata", () => {
       const store = createMockStore();
       const monitor = new Monitor({ store });
 
-      const enriched = monitor.enrichWithSampling({}, {
-        samplingRate: 0.1,
-        sampled: true,
-        samplingReason: "high_volume",
-      });
+      const enriched = monitor.enrichWithSampling(
+        {},
+        {
+          samplingRate: 0.1,
+          sampled: true,
+          samplingReason: "high_volume"
+        }
+      );
 
       expect(enriched.sampling).toEqual({
         samplingRate: 0.1,
         sampled: true,
-        samplingReason: "high_volume",
+        samplingReason: "high_volume"
       });
     });
 
@@ -200,9 +221,12 @@ describe("Enhanced Metadata", () => {
       const reasons = ["high_volume", "debug", "error", "random", "always"] as const;
 
       reasons.forEach((reason) => {
-        const enriched = monitor.enrichWithSampling({}, {
-          samplingReason: reason,
-        });
+        const enriched = monitor.enrichWithSampling(
+          {},
+          {
+            samplingReason: reason
+          }
+        );
 
         expect(enriched.sampling?.samplingReason).toBe(reason);
       });
@@ -218,17 +242,17 @@ describe("Enhanced Metadata", () => {
 
       payload = monitor.enrichWithRequestMetadata(payload, {
         streaming: true,
-        requestSizeBytes: 1024,
+        requestSizeBytes: 1024
       });
 
       payload = monitor.enrichWithTiming(payload, {
         networkTime: 50,
-        providerLatency: 200,
+        providerLatency: 200
       });
 
       payload = monitor.enrichWithEnvironment(payload, {
         environment: "production",
-        serviceName: "api",
+        serviceName: "api"
       });
 
       expect(payload.original).toBe("data");
@@ -250,7 +274,7 @@ describe("Enhanced Metadata", () => {
       const basePayload = { messages: [{ role: "user", content: "test" }] };
       const enrichedPayload = monitor.enrichWithRequestMetadata(basePayload, {
         streaming: true,
-        requestSizeBytes: 100,
+        requestSizeBytes: 100
       });
 
       // Simulate what NodeLLM would do
@@ -274,7 +298,7 @@ describe("Enhanced Metadata", () => {
       // Response with enhanced metadata
       const result = {
         toString: () => "response",
-        usage: { cost: 0.01 },
+        usage: { cost: 0.01 }
       };
       await monitor.onResponse(ctx, result);
 

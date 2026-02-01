@@ -3,11 +3,13 @@
 ## Quick Start
 
 ### 1. Run Tests
+
 ```bash
 npm test
 ```
 
 **Expected Output**:
+
 ```
 ✓ test/Monitor.test.ts (2 tests)
 ✓ test/TimeSeriesBuilder.test.ts (11 tests)
@@ -22,11 +24,13 @@ Test Files  5 passed (5)
 ---
 
 ### 2. Build
+
 ```bash
 npm run build:server
 ```
 
 **Expected Output**:
+
 ```
 ESM Build start
 ESM dist/index.js                         4.35 KB
@@ -37,11 +41,13 @@ ESM ⚡️ Build success
 ---
 
 ### 3. Run Example
+
 ```bash
 npm run example
 ```
 
 **What it does**:
+
 - Builds the library and dashboard server
 - Simulates live LLM requests with 3 different providers
 - Demonstrates **Enhanced Metadata** (retries, environment, timing breakdowns)
@@ -49,11 +55,13 @@ npm run example
 - Starts a live dashboard at **http://localhost:3333/monitor**
 
 ### 4. Run Custom Adapter Example
+
 ```bash
 npm run example:custom
 ```
 
 **What it does**:
+
 - Demonstrates how to use a **non-Prisma** custom store
 - Uses a class-based `SimpleLogStore` implementation
 - Starts a dashboard on **http://localhost:4000/monitor**
@@ -63,6 +71,7 @@ npm run example:custom
 ## Development Workflow
 
 ### Watch Mode (Development)
+
 ```bash
 npm run build:server -- --watch
 ```
@@ -72,6 +81,7 @@ Rebuilds automatically on file changes.
 ---
 
 ### Run Specific Tests
+
 ```bash
 # Single test file
 npm test -- TimeSeriesBuilder.test.ts
@@ -88,11 +98,13 @@ npm test -- --watch
 ## Production Setup
 
 ### 1. Install in Your Project
+
 ```bash
 npm install @node-llm/monitor
 ```
 
 ### 2. Add Prisma Schema
+
 Add to your `schema.prisma`:
 
 ```prisma
@@ -116,46 +128,50 @@ model monitoring_events {
 ```
 
 ### 3. Run Migration
+
 ```bash
 npx prisma migrate dev --name add_monitoring_events
 ```
 
 ### 4. Integrate with NodeLLM
+
 ```typescript
-import { createLLM } from '@node-llm/core';
-import { createPrismaMonitor } from '@node-llm/monitor';
-import { prisma } from './db';
+import { createLLM } from "@node-llm/core";
+import { createPrismaMonitor } from "@node-llm/monitor";
+import { prisma } from "./db";
 
 const monitor = createPrismaMonitor(prisma, {
   captureContent: false // PII protection
 });
 
 const llm = createLLM({
-  provider: 'openai',
+  provider: "openai",
   middlewares: [monitor]
 });
 
 // Use enhanced metadata
-const payload = monitor.enrichWithEnvironment({}, {
-  environment: 'production',
-  serviceName: 'api'
-});
+const payload = monitor.enrichWithEnvironment(
+  {},
+  {
+    environment: "production",
+    serviceName: "api"
+  }
+);
 
-const result = await llm.chat([
-  { role: 'user', content: 'Hello' }
-], { ...payload });
+const result = await llm.chat([{ role: "user", content: "Hello" }], { ...payload });
 ```
 
 ### 5. Start Dashboard
+
 ```typescript
-import { MonitorDashboard } from '@node-llm/monitor';
-import express from 'express';
-import { prisma } from './db';
+import { MonitorDashboard } from "@node-llm/monitor";
+import express from "express";
+import { prisma } from "./db";
 
 const app = express();
 const dashboard = new MonitorDashboard(prisma);
 
-app.use('/monitor', dashboard.middleware());
+app.use("/monitor", dashboard.middleware());
 app.listen(3000);
 
 // Dashboard available at: http://localhost:3000/monitor
@@ -166,6 +182,7 @@ app.listen(3000);
 ## Dashboard
 
 ### Local Development
+
 ```bash
 # Terminal 1: Build and run example
 npm run example
@@ -175,6 +192,7 @@ open http://localhost:3333/monitor
 ```
 
 ### Production Build
+
 ```bash
 cd dashboard
 npm run build
@@ -211,6 +229,7 @@ curl http://localhost:3333/monitor/api/stats
 ## Troubleshooting
 
 ### Tests Fail
+
 ```bash
 # Clear cache and retry
 rm -rf node_modules/.vite
@@ -218,6 +237,7 @@ npm test
 ```
 
 ### Build Fails
+
 ```bash
 # Check TypeScript version
 npx tsc --version
@@ -229,6 +249,7 @@ npm run build:server
 ```
 
 ### Dashboard Not Loading
+
 ```bash
 # Check if port is in use
 lsof -i :3333
@@ -238,6 +259,7 @@ PORT=3457 npm run example
 ```
 
 ### Prisma Issues
+
 ```bash
 # Regenerate Prisma client
 npx prisma generate
@@ -251,6 +273,7 @@ npx prisma migrate reset
 ## Performance Testing
 
 ### Load Test
+
 ```bash
 # Install autocannon
 npm install -g autocannon
@@ -260,6 +283,7 @@ autocannon -c 10 -d 30 http://localhost:3456/api/monitor/stats
 ```
 
 ### Memory Profiling
+
 ```bash
 node --inspect example.ts
 # Open chrome://inspect in Chrome
@@ -270,6 +294,7 @@ node --inspect example.ts
 ## CI/CD Integration
 
 ### GitHub Actions Example
+
 ```yaml
 name: Test
 on: [push, pull_request]
@@ -280,7 +305,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: "20"
       - run: npm ci
       - run: npm test
       - run: npm run build:server
@@ -326,6 +351,7 @@ MONITOR_SAMPLING_RATE=0.1  # 10% sampling
 ## Summary
 
 **Development**:
+
 ```bash
 npm test              # Run tests
 npm run build:server  # Build
@@ -333,6 +359,7 @@ node example.ts       # Run example
 ```
 
 **Production**:
+
 ```bash
 npm install @node-llm/monitor
 # Add Prisma schema

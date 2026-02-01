@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { 
-  MonitoringStore, 
-  MonitorOptions, 
+import type {
+  MonitoringStore,
+  MonitorOptions,
   MonitoringEvent,
   ContentScrubbingOptions
 } from "./types.js";
@@ -25,7 +25,7 @@ export interface MinimalContext {
 
 export class Monitor {
   public readonly name = "NodeLLMMonitor";
-  
+
   private readonly store: MonitoringStore;
   private readonly captureContent: boolean;
   private readonly scrubber: ContentScrubber | null;
@@ -34,7 +34,7 @@ export class Monitor {
   /**
    * Seamless creation with In-Memory store (Development/Testing)
    */
-  static memory(options?: Omit<MonitorOptions, 'store'>): Monitor {
+  static memory(options?: Omit<MonitorOptions, "store">): Monitor {
     return new Monitor({
       ...options,
       store: new MemoryAdapter()
@@ -45,7 +45,7 @@ export class Monitor {
     this.store = options.store;
     this.captureContent = options.captureContent ?? false;
     this.errorHook = options.onError;
-    
+
     // Initialize scrubber if content capture is enabled
     // By default, scrubbing is enabled when capturing content
     if (this.captureContent) {
@@ -61,7 +61,7 @@ export class Monitor {
    */
   private scrubContent<T>(content: T): T {
     if (!this.scrubber || !content) return content;
-    
+
     if (typeof content === "string") {
       return this.scrubber.scrubString(content) as T;
     }
@@ -76,14 +76,17 @@ export class Monitor {
 
   async onRequest(ctx: MinimalContext): Promise<void> {
     this.initializeMetrics(ctx);
-    
+
     await this.emit(ctx, "request.start", {
       messages: this.captureContent ? this.scrubContent(ctx.messages) : undefined,
       options: this.captureContent ? this.scrubContent(ctx.options) : undefined
     });
   }
 
-  async onResponse(ctx: MinimalContext, result: { toString(): string; usage?: any; model?: string }): Promise<void> {
+  async onResponse(
+    ctx: MinimalContext,
+    result: { toString(): string; usage?: any; model?: string }
+  ): Promise<void> {
     const metrics = this.calculateMetrics(ctx, result.usage);
 
     // If the result has a model (e.g., from Embedding response), use it to update context
@@ -92,19 +95,29 @@ export class Monitor {
       ctx.model = result.model;
     }
 
-    await this.emit(ctx, "request.end", {
-      result: this.captureContent ? this.scrubContent(result.toString()) : undefined,
-      usage: result.usage
-    }, metrics);
+    await this.emit(
+      ctx,
+      "request.end",
+      {
+        result: this.captureContent ? this.scrubContent(result.toString()) : undefined,
+        usage: result.usage
+      },
+      metrics
+    );
   }
 
   async onError(ctx: MinimalContext, error: Error): Promise<void> {
     const metrics = this.calculateMetrics(ctx);
-    
-    await this.emit(ctx, "request.error", {
-      error: error.message,
-      stack: error.stack
-    }, metrics);
+
+    await this.emit(
+      ctx,
+      "request.error",
+      {
+        error: error.message,
+        stack: error.stack
+      },
+      metrics
+    );
   }
 
   async onToolCallStart(ctx: MinimalContext, tool: any): Promise<void> {
@@ -129,9 +142,9 @@ export class Monitor {
    * Internal telemetry engine
    */
   private async emit(
-    ctx: MinimalContext, 
-    eventType: string, 
-    payload: any, 
+    ctx: MinimalContext,
+    eventType: string,
+    payload: any,
     metrics: Partial<MonitoringEvent> = {}
   ): Promise<void> {
     const event: MonitoringEvent = {
@@ -200,10 +213,11 @@ export class Monitor {
     const request: Record<string, any> = {};
     if (options.streaming !== undefined) request.streaming = options.streaming;
     if (options.requestSizeBytes !== undefined) request.requestSizeBytes = options.requestSizeBytes;
-    if (options.responseSizeBytes !== undefined) request.responseSizeBytes = options.responseSizeBytes;
+    if (options.responseSizeBytes !== undefined)
+      request.responseSizeBytes = options.responseSizeBytes;
     if (options.promptVersion !== undefined) request.promptVersion = options.promptVersion;
     if (options.templateId !== undefined) request.templateId = options.templateId;
-    
+
     return {
       ...payload,
       request
@@ -237,7 +251,7 @@ export class Monitor {
     env: {
       serviceName?: string;
       serviceVersion?: string;
-      environment?: 'production' | 'staging' | 'development' | 'test';
+      environment?: "production" | "staging" | "development" | "test";
       region?: string;
     }
   ): EnhancedMonitoringPayload {
@@ -245,7 +259,7 @@ export class Monitor {
       ...payload,
       environment: {
         ...env,
-        nodeVersion: process.version,
+        nodeVersion: process.version
       }
     };
   }
@@ -257,7 +271,7 @@ export class Monitor {
     payload: Record<string, any>,
     retry: {
       retryCount?: number;
-      retryReason?: 'timeout' | 'rate_limit' | 'network' | 'server_error' | 'other';
+      retryReason?: "timeout" | "rate_limit" | "network" | "server_error" | "other";
       fallbackModel?: string;
     }
   ): EnhancedMonitoringPayload {
@@ -275,7 +289,7 @@ export class Monitor {
     sampling: {
       samplingRate?: number;
       sampled?: boolean;
-      samplingReason?: 'high_volume' | 'debug' | 'error' | 'random' | 'always';
+      samplingReason?: "high_volume" | "debug" | "error" | "random" | "always";
     }
   ): EnhancedMonitoringPayload {
     return {

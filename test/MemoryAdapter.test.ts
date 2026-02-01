@@ -5,9 +5,7 @@ import type { MonitoringEvent } from "../src/types.js";
 describe("MemoryAdapter", () => {
   let adapter: MemoryAdapter;
 
-  const createEvent = (
-    overrides: Partial<MonitoringEvent> = {}
-  ): MonitoringEvent => ({
+  const createEvent = (overrides: Partial<MonitoringEvent> = {}): MonitoringEvent => ({
     id: Math.random().toString(36),
     eventType: "request.end",
     requestId: "req-123",
@@ -18,7 +16,7 @@ describe("MemoryAdapter", () => {
     createdAt: new Date(),
     provider: "openai",
     model: "gpt-4",
-    ...overrides,
+    ...overrides
   });
 
   beforeEach(() => {
@@ -28,7 +26,7 @@ describe("MemoryAdapter", () => {
   it("should save and retrieve events", async () => {
     const event = createEvent();
     await adapter.saveEvent(event);
-    
+
     const events = await adapter.getEvents(event.requestId);
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual(event);
@@ -60,11 +58,13 @@ describe("MemoryAdapter", () => {
 
   it("should return correct traces list with pagination", async () => {
     for (let i = 0; i < 10; i++) {
-        await adapter.saveEvent(createEvent({ 
-            requestId: `req-${i}`, 
-            eventType: i % 2 === 0 ? "request.end" : "request.error",
-            time: new Date(Date.now() + i * 10) // Ensure stable sorting
-        }));
+      await adapter.saveEvent(
+        createEvent({
+          requestId: `req-${i}`,
+          eventType: i % 2 === 0 ? "request.end" : "request.error",
+          time: new Date(Date.now() + i * 10) // Ensure stable sorting
+        })
+      );
     }
 
     const traces = await adapter.listTraces({ limit: 5, offset: 0 });
@@ -76,7 +76,7 @@ describe("MemoryAdapter", () => {
   it("should return time-series metrics", async () => {
     await adapter.saveEvent(createEvent());
     const metrics = await adapter.getMetrics();
-    
+
     expect(metrics.totals.totalRequests).toBe(1);
     expect(metrics.timeSeries.requests.length).toBeGreaterThan(0);
     expect(metrics.byProvider).toHaveLength(1);

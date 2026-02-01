@@ -13,7 +13,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn(),
           findMany: vi.fn(),
           count: vi.fn(),
-          aggregate: vi.fn(),
+          aggregate: vi.fn()
         }
       };
 
@@ -30,15 +30,13 @@ describe("createPrismaMonitor", () => {
           create: vi.fn(),
           findMany: vi.fn(),
           count: vi.fn(),
-          aggregate: vi.fn(),
+          aggregate: vi.fn()
         }
       };
 
       const monitor = createPrismaMonitor(mockPrisma, {
         captureContent: true,
-        customPatterns: [
-          { pattern: /secret/gi, name: "custom_secret" }
-        ]
+        customPatterns: [{ pattern: /secret/gi, name: "custom_secret" }]
       });
 
       expect(monitor).toBeInstanceOf(Monitor);
@@ -49,7 +47,7 @@ describe("createPrismaMonitor", () => {
       const invalidPrisma = {};
 
       const monitor = createPrismaMonitor(invalidPrisma as any);
-      
+
       // Validation happens on first store method call (lazy validation)
       try {
         await monitor.store?.getEvents("test");
@@ -69,7 +67,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 
@@ -87,7 +85,7 @@ describe("createPrismaMonitor", () => {
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
       const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
-      
+
       expect(callArgs.data).toBeDefined();
       expect(callArgs.data.eventType).toBe("request.start");
       expect(callArgs.data.requestId).toBe("req_test_001");
@@ -103,7 +101,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 
@@ -113,7 +111,7 @@ describe("createPrismaMonitor", () => {
         requestId: "req_test_002",
         provider: "openai",
         model: "gpt-4o-mini",
-        state: {},
+        state: {}
       };
 
       const mockResponse = {
@@ -129,7 +127,7 @@ describe("createPrismaMonitor", () => {
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
       const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
-      
+
       expect(callArgs.data.eventType).toBe("request.end");
       expect(callArgs.data.requestId).toBe("req_test_002");
       // Cost may be calculated from usage if available
@@ -140,7 +138,7 @@ describe("createPrismaMonitor", () => {
       console.log(`✓ Captures response events with token usage`);
       console.log(`  Event Type: ${callArgs.data.eventType}`);
       console.log(`  Request ID: ${callArgs.data.requestId}`);
-      console.log(`  Cost calculated: ${callArgs.data.cost ? 'Yes' : 'No'}`);
+      console.log(`  Cost calculated: ${callArgs.data.cost ? "Yes" : "No"}`);
     });
 
     it("should capture errors", async () => {
@@ -149,7 +147,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 
@@ -159,7 +157,7 @@ describe("createPrismaMonitor", () => {
         requestId: "req_error_001",
         provider: "openai",
         model: "gpt-4o-mini",
-        state: {},
+        state: {}
       };
 
       const testError = new Error("API rate limit exceeded");
@@ -168,7 +166,7 @@ describe("createPrismaMonitor", () => {
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
       const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
-      
+
       expect(callArgs.data.eventType).toBe("request.error");
       expect(callArgs.data.requestId).toBe("req_error_001");
 
@@ -194,7 +192,9 @@ describe("createPrismaMonitor", () => {
           create: vi.fn(),
           findMany: vi.fn().mockResolvedValue(mockEvents),
           count: vi.fn().mockResolvedValue(1),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0.00123 }, _avg: { duration: 1500 } }),
+          aggregate: vi
+            .fn()
+            .mockResolvedValue({ _sum: { cost: 0.00123 }, _avg: { duration: 1500 } })
         }
       };
 
@@ -214,7 +214,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 
@@ -250,7 +250,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 
@@ -309,7 +309,8 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(3),
-          aggregate: vi.fn()
+          aggregate: vi
+            .fn()
             .mockResolvedValueOnce({ _sum: { cost: 0.000495 }, _avg: { duration: 1100 } })
         }
       };
@@ -350,7 +351,9 @@ describe("createPrismaMonitor", () => {
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalledTimes(6); // 3 requests × 2 events each
 
       console.log(`✓ Accumulates events across multiple requests`);
-      console.log(`  Total events captured: ${mockPrisma.monitoring_events.create.mock.calls.length}`);
+      console.log(
+        `  Total events captured: ${mockPrisma.monitoring_events.create.mock.calls.length}`
+      );
     });
   });
 
@@ -363,7 +366,7 @@ describe("createPrismaMonitor", () => {
       };
 
       const monitor = createPrismaMonitor(invalidPrisma as any);
-      
+
       // Validation happens on first store method call (lazy validation)
       try {
         await monitor.store?.getEvents("test");
@@ -382,7 +385,7 @@ describe("createPrismaMonitor", () => {
           create: vi.fn().mockResolvedValue({}),
           findMany: vi.fn().mockResolvedValue([]),
           count: vi.fn().mockResolvedValue(0),
-          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } }),
+          aggregate: vi.fn().mockResolvedValue({ _sum: { cost: 0 }, _avg: { duration: 0 } })
         }
       };
 

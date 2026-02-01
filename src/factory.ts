@@ -5,12 +5,12 @@ import { FileAdapter } from "./adapters/filesystem/FileAdapter.js";
 
 /**
  * Creates a Monitor instance pre-configured with a PrismaAdapter.
- * 
+ *
  * @param prisma - The PrismaClient instance
  * @param options - Additional monitor options (captureContent, onError, etc)
  * @returns A Monitor instance
  */
-export function createPrismaMonitor(prisma: any, options?: Omit<MonitorOptions, 'store'>): Monitor {
+export function createPrismaMonitor(prisma: any, options?: Omit<MonitorOptions, "store">): Monitor {
   return new Monitor({
     ...options,
     store: new PrismaAdapter(prisma)
@@ -19,11 +19,11 @@ export function createPrismaMonitor(prisma: any, options?: Omit<MonitorOptions, 
 
 /**
  * Creates a Monitor instance pre-configured with a FileAdapter.
- * 
+ *
  * @param path - Path to the log file (standard: monitoring.log)
  * @param options - Additional monitor options
  */
-export function createFileMonitor(path?: string, options?: Omit<MonitorOptions, 'store'>): Monitor {
+export function createFileMonitor(path?: string, options?: Omit<MonitorOptions, "store">): Monitor {
   return new Monitor({
     ...options,
     store: new FileAdapter(path)

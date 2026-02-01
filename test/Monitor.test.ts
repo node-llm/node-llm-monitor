@@ -21,18 +21,20 @@ describe("Monitor Middleware", () => {
     };
 
     await monitor.onRequest(ctx);
-    
-    expect(saveEvent).toHaveBeenCalledWith(expect.objectContaining({
-      requestId: "req-123",
-      eventType: "request.start",
-      provider: "openai"
-    }));
+
+    expect(saveEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: "req-123",
+        eventType: "request.start",
+        provider: "openai"
+      })
+    );
   });
 
   it("should respect captureContent: false (default)", async () => {
     const saveEvent = vi.fn().mockResolvedValue(undefined);
-    const store: MonitoringStore = { 
-      saveEvent, 
+    const store: MonitoringStore = {
+      saveEvent,
       getEvents: vi.fn(),
       getStats: vi.fn(),
       listTraces: vi.fn().mockResolvedValue({ items: [], total: 0, limit: 50, offset: 0 })
@@ -40,10 +42,10 @@ describe("Monitor Middleware", () => {
     const monitor = new Monitor({ store });
 
     const ctx = { requestId: "r", provider: "p", model: "m", state: {} };
-    const result = { 
-      content: "Sensitive Info", 
+    const result = {
+      content: "Sensitive Info",
       usage: { total_tokens: 10 },
-      toString: () => "Sensitive Info" 
+      toString: () => "Sensitive Info"
     };
 
     await monitor.onResponse(ctx, result);

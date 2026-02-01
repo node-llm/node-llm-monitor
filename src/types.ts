@@ -1,4 +1,4 @@
-export type EventType = 
+export type EventType =
   | "request.start"
   | "request.end"
   | "request.error"
@@ -78,11 +78,11 @@ export interface PaginatedTraces {
 
 /**
  * Storage adapter interface for monitoring data.
- * 
+ *
  * Required methods:
  * - saveEvent: Persist telemetry events
  * - getStats: Aggregate statistics for dashboard overview
- * 
+ *
  * Optional methods (dashboard features):
  * - getMetrics: Time-series data for charts
  * - listTraces: Paginated trace list
@@ -92,7 +92,7 @@ export interface MonitoringStore {
   // Required: Core telemetry
   saveEvent(event: MonitoringEvent): Promise<void>;
   getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats>;
-  
+
   // Optional: Dashboard features
   getMetrics?(options?: { from?: Date; to?: Date }): Promise<MetricsData>;
   listTraces?(options?: { limit?: number; offset?: number }): Promise<PaginatedTraces>;
@@ -102,10 +102,10 @@ export interface MonitoringStore {
 /**
  * CORS configuration for dashboard API endpoints.
  */
-export type CorsConfig = 
-  | boolean           // true = allow all, false = same-origin only
-  | string            // specific origin
-  | string[]          // multiple origins
+export type CorsConfig =
+  | boolean // true = allow all, false = same-origin only
+  | string // specific origin
+  | string[] // multiple origins
   | { origin: string | string[]; credentials?: boolean };
 
 export interface MonitorOptions {

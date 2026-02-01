@@ -1,7 +1,7 @@
-import type { 
-  MonitoringStore, 
-  MonitoringEvent, 
-  MonitoringStats, 
+import type {
+  MonitoringStore,
+  MonitoringEvent,
+  MonitoringStats,
   TraceSummary,
   PaginatedTraces,
   MetricsData
@@ -21,7 +21,7 @@ export class PrismaAdapter implements MonitoringStore {
 
   private ensureValidated() {
     if (!this.validated) {
-      if (!this.prisma || typeof this.prisma[this.tableName]?.create !== 'function') {
+      if (!this.prisma || typeof this.prisma[this.tableName]?.create !== "function") {
         throw new Error(
           `[PrismaAdapter] Critical: Prisma model '${this.tableName}' not found or incorrectly generated.`
         );
@@ -70,7 +70,9 @@ export class PrismaAdapter implements MonitoringStore {
     const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
     const [totalRequests, totalCostData, avgDurationData, errorCount] = await Promise.all([
-      this.model.count({ where: { ...where, eventType: { in: ["request.end", "request.error"] } } }),
+      this.model.count({
+        where: { ...where, eventType: { in: ["request.end", "request.error"] } }
+      }),
       this.model.aggregate({ where, _sum: { cost: true } }),
       this.model.aggregate({ where, _avg: { duration: true } }),
       this.model.count({ where: { ...where, eventType: "request.error" } })

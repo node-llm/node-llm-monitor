@@ -19,10 +19,7 @@ export class TimeSeriesBuilder {
     const buckets = new Map<number, BucketData>();
 
     for (const event of events) {
-      if (
-        event.eventType === "request.end" ||
-        event.eventType === "request.error"
-      ) {
+      if (event.eventType === "request.end" || event.eventType === "request.error") {
         const bucket = this.getBucket(event.time);
         const data = buckets.get(bucket) || this.emptyBucket();
 
@@ -43,10 +40,7 @@ export class TimeSeriesBuilder {
     const providerMap = new Map<string, ProviderStatsInternal>();
 
     for (const event of events) {
-      if (
-        event.eventType === "request.end" ||
-        event.eventType === "request.error"
-      ) {
+      if (event.eventType === "request.end" || event.eventType === "request.error") {
         const key = `${event.provider}/${event.model}`;
         const existing = providerMap.get(key) || {
           provider: event.provider,
@@ -55,7 +49,7 @@ export class TimeSeriesBuilder {
           cost: 0,
           avgDuration: 0,
           errorCount: 0,
-          _totalDuration: 0,
+          _totalDuration: 0
         };
 
         existing.requests++;
@@ -68,9 +62,7 @@ export class TimeSeriesBuilder {
       }
     }
 
-    return Array.from(providerMap.values()).map(
-      ({ _totalDuration, ...stats }) => stats
-    );
+    return Array.from(providerMap.values()).map(({ _totalDuration, ...stats }) => stats);
   }
 
   private getBucket(time: Date | string): number {
@@ -84,31 +76,27 @@ export class TimeSeriesBuilder {
       cost: 0,
       duration: 0,
       errors: 0,
-      count: 0,
+      count: 0
     };
   }
 
-  private toTimeSeries(
-    buckets: Map<number, BucketData>
-  ): MetricsData["timeSeries"] {
-    const sortedBuckets = Array.from(buckets.entries()).sort(
-      (a, b) => a[0] - b[0]
-    );
+  private toTimeSeries(buckets: Map<number, BucketData>): MetricsData["timeSeries"] {
+    const sortedBuckets = Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]);
 
     return {
       requests: sortedBuckets.map(([ts, d]) => ({
         timestamp: ts,
-        value: d.requests,
+        value: d.requests
       })),
       cost: sortedBuckets.map(([ts, d]) => ({ timestamp: ts, value: d.cost })),
       duration: sortedBuckets.map(([ts, d]) => ({
         timestamp: ts,
-        value: d.count > 0 ? d.duration / d.count : 0,
+        value: d.count > 0 ? d.duration / d.count : 0
       })),
       errors: sortedBuckets.map(([ts, d]) => ({
         timestamp: ts,
-        value: d.errors,
-      })),
+        value: d.errors
+      }))
     };
   }
 }

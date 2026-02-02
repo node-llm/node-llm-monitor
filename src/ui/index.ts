@@ -175,7 +175,28 @@ export class MonitorDashboard {
       try {
         const limit = parseInt(url.searchParams.get("limit") || "50");
         const offset = parseInt(url.searchParams.get("offset") || "0");
-        const traces = await this.store.listTraces({ limit, offset });
+
+        const options: any = { limit, offset, ...timeFilter };
+
+        const requestId = url.searchParams.get("requestId");
+        if (requestId) options.requestId = requestId;
+
+        const status = url.searchParams.get("status");
+        if (status === "success" || status === "error") options.status = status;
+
+        const model = url.searchParams.get("model");
+        if (model) options.model = model;
+
+        const provider = url.searchParams.get("provider");
+        if (provider) options.provider = provider;
+
+        const minCost = url.searchParams.get("minCost");
+        if (minCost) options.minCost = parseFloat(minCost);
+
+        const minLatency = url.searchParams.get("minLatency");
+        if (minLatency) options.minLatency = parseInt(minLatency);
+
+        const traces = await this.store.listTraces(options);
         this.sendJson(res, traces, req);
       } catch (error) {
         console.error("[MonitorDashboard] Error getting traces:", error);

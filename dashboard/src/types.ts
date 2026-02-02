@@ -80,3 +80,14 @@ export interface PaginatedTraces {
 }
 
 export type TimeRange = '1h' | '24h' | '7d' | '30d' | 'custom';
+
+export interface TraceFilters {
+  requestId?: string;
+  status?: 'success' | 'error';
+  model?: string;
+  provider?: string;
+  minCost?: number;
+  minLatency?: number;
+  from?: Date;
+  to?: Date;
+}

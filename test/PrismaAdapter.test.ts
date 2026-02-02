@@ -10,13 +10,10 @@ describe("PrismaAdapter", () => {
     id: "evt-123",
     eventType: "request.end",
     requestId: "req-123",
-    sessionId: undefined,
-    transactionId: undefined,
     time: new Date(),
     duration: 100,
     cost: 0.01,
     cpuTime: 50,
-    gcTime: undefined,
     allocations: 1024,
     payload: {},
     createdAt: new Date(),
@@ -277,6 +274,38 @@ describe("PrismaAdapter", () => {
       );
       expect(result.limit).toBe(50);
       expect(result.offset).toBe(0);
+    });
+
+    it("should construct correct where clause for filters", async () => {
+      mockPrisma.monitoring_events.findMany.mockResolvedValue([]);
+      mockPrisma.monitoring_events.count.mockResolvedValue(0);
+
+      const filters = {
+        requestId: "req-1",
+        model: "gpt-4",
+        provider: "openai",
+        status: "error" as const,
+        minCost: 0.5,
+        minLatency: 1000,
+        from: new Date("2024-01-01"),
+        to: new Date("2024-01-02")
+      };
+
+      await adapter.listTraces(filters);
+
+      expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            requestId: "req-1",
+            model: "gpt-4",
+            provider: "openai",
+            eventType: "request.error",
+            cost: { gte: 0.5 },
+            duration: { gte: 1000 },
+            time: { gte: filters.from, lte: filters.to }
+          })
+        })
+      );
     });
   });
 });

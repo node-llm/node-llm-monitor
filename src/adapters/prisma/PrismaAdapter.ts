@@ -4,7 +4,8 @@ import type {
   MonitoringStats,
   TraceSummary,
   PaginatedTraces,
-  MetricsData
+  MetricsData,
+  TraceFilters
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
@@ -116,23 +117,44 @@ export class PrismaAdapter implements MonitoringStore {
     };
   }
 
-  async listTraces(options: { limit?: number; offset?: number } = {}): Promise<PaginatedTraces> {
+  async listTraces(
+    options: { limit?: number; offset?: number } & TraceFilters = {}
+  ): Promise<PaginatedTraces> {
     this.ensureValidated();
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
 
+    const where: any = {
+      eventType: { in: ["request.end", "request.error"] }
+    };
+
+    if (options.status === "success") {
+      where.eventType = "request.end";
+    } else if (options.status === "error") {
+      where.eventType = "request.error";
+    }
+
+    if (options.requestId) where.requestId = options.requestId;
+    if (options.model) where.model = options.model;
+    if (options.provider) where.provider = options.provider;
+
+    if (options.minCost !== undefined) where.cost = { gte: options.minCost };
+    if (options.minLatency !== undefined) where.duration = { gte: options.minLatency };
+
+    if (options.from || options.to) {
+      where.time = {};
+      if (options.from) where.time.gte = options.from;
+      if (options.to) where.time.lte = options.to;
+    }
+
     const [items, total] = await Promise.all([
       this.model.findMany({
-        where: {
-          eventType: { in: ["request.end", "request.error"] }
-        },
+        where,
         orderBy: { time: "desc" },
         take: limit,
         skip: offset
       }),
-      this.model.count({
-        where: { eventType: { in: ["request.end", "request.error"] } }
-      })
+      this.model.count({ where })
     ]);
 
     const summaries: TraceSummary[] = items.map((e: any) => ({

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
-import type { TraceSummary, MonitoringEvent, MetricsData, TimeRange } from '../types';
+import type { TraceSummary, MonitoringEvent, MetricsData, TimeRange, TraceFilters } from '../types';
 import { getTimeRangeDate } from '../components/TimeRangeFilter';
 
 interface UseMonitorOptions {
@@ -21,6 +21,8 @@ interface UseMonitorReturn {
   error: Error | null;
   timeRange: TimeRange;
   setTimeRange: (range: TimeRange) => void;
+  filters: TraceFilters;
+  setFilters: (filters: TraceFilters) => void;
   selectTrace: (trace: TraceSummary | null) => void;
   refresh: () => Promise<void>;
 }
@@ -52,6 +54,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
+  const [filters, setFilters] = useState<TraceFilters>({});
   
   const mountedRef = useRef(true);
 
@@ -60,7 +63,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
       const from = getTimeRangeDate(timeRange);
       const [metricsData, tracesData] = await Promise.all([
         api.getMetrics({ from }),
-        api.getTraces({ limit, from }),
+        api.getTraces({ limit, from, ...filters }),
       ]);
       
       if (mountedRef.current) {
@@ -79,7 +82,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
         setLoading(false);
       }
     }
-  }, [limit, timeRange]);
+  }, [limit, timeRange, filters]);
 
   const selectTrace = useCallback(async (trace: TraceSummary | null) => {
     setSelectedTrace(trace);
@@ -118,6 +121,11 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     setLoading(true);
   }, []);
 
+  const handleFiltersChange = useCallback((newFilters: TraceFilters) => {
+    setFilters(newFilters);
+    setLoading(true);
+  }, []);
+
   // Initial fetch and refetch on time range change
   useEffect(() => {
     mountedRef.current = true;
@@ -146,6 +154,8 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     error,
     timeRange,
     setTimeRange: handleTimeRangeChange,
+    filters,
+    setFilters: handleFiltersChange,
     selectTrace,
     refresh,
   };

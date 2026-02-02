@@ -1,4 +1,4 @@
-import type { MonitoringStats, PaginatedTraces, MonitoringEvent, MetricsData } from '../types';
+import type { MonitoringStats, PaginatedTraces, MonitoringEvent, MetricsData, TraceFilters } from '../types';
 
 const API_BASE = './api';
 
@@ -72,11 +72,19 @@ export const api = {
   /**
    * Get paginated list of traces
    */
-  async getTraces(options: { limit?: number; offset?: number; from?: Date } = {}): Promise<PaginatedTraces> {
+  async getTraces(options: { limit?: number; offset?: number } & TraceFilters = {}): Promise<PaginatedTraces> {
     const params = new URLSearchParams();
     if (options.limit) params.set('limit', options.limit.toString());
     if (options.offset) params.set('offset', options.offset.toString());
     if (options.from) params.set('from', options.from.toISOString());
+    if (options.to) params.set('to', options.to.toISOString());
+
+    if (options.requestId) params.set('requestId', options.requestId);
+    if (options.status) params.set('status', options.status);
+    if (options.model) params.set('model', options.model);
+    if (options.provider) params.set('provider', options.provider);
+    if (options.minCost !== undefined) params.set('minCost', options.minCost.toString());
+    if (options.minLatency !== undefined) params.set('minLatency', options.minLatency.toString());
     
     const query = params.toString();
     return client.fetchJson<PaginatedTraces>(`${API_BASE}/traces${query ? `?${query}` : ''}`, 'traces');

@@ -76,6 +76,17 @@ export interface PaginatedTraces {
   offset: number;
 }
 
+export interface TraceFilters {
+  requestId?: string;
+  status?: "success" | "error";
+  model?: string;
+  provider?: string;
+  minCost?: number;
+  minLatency?: number;
+  from?: Date;
+  to?: Date;
+}
+
 /**
  * Storage adapter interface for monitoring data.
  *
@@ -95,7 +106,9 @@ export interface MonitoringStore {
 
   // Optional: Dashboard features
   getMetrics?(options?: { from?: Date; to?: Date }): Promise<MetricsData>;
-  listTraces?(options?: { limit?: number; offset?: number }): Promise<PaginatedTraces>;
+  listTraces?(
+    options?: { limit?: number; offset?: number } & TraceFilters
+  ): Promise<PaginatedTraces>;
   getEvents?(requestId: string): Promise<MonitoringEvent[]>;
 }
 

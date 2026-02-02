@@ -123,13 +123,13 @@ Inspect individual requests with full execution flow, including tool calls, timi
 ### Launch the Dashboard
 
 ```ts
-import { createMonitorMiddleware } from "@node-llm/monitor/ui";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
 import express from "express";
 
-// Ensure you use the same adapter instance
 const app = express();
-app.use("/monitor", createMonitorMiddleware(adapter));
+const dashboard = new MonitorDashboard(prisma);
 
+app.use("/monitor", dashboard.middleware());
 app.listen(3000);
 ```
 

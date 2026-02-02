@@ -23,6 +23,8 @@ export function Dashboard() {
     error,
     timeRange,
     setTimeRange,
+    filters,
+    setFilters,
     selectTrace,
     refresh,
   } = useMonitor({ pollInterval: autoRefresh ? 5000 : 0 });
@@ -159,7 +161,46 @@ export function Dashboard() {
       ) : (
         /* Traces View */
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-4">
+            
+            {/* Filter Bar */}
+            <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-4 rounded-xl space-y-3">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Search Request ID..."
+                  className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
+                  value={filters.requestId || ''}
+                  onChange={(e) => setFilters({ ...filters, requestId: e.target.value || undefined })}
+                />
+                <select
+                  className="px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
+                  value={filters.status || ''}
+                  onChange={(e) => setFilters({ ...filters, status: (e.target.value as any) || undefined })}
+                >
+                  <option value="">All Status</option>
+                  <option value="success">Success</option>
+                  <option value="error">Error</option>
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Provider (e.g. openai)..."
+                  className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
+                  value={filters.provider || ''}
+                  onChange={(e) => setFilters({ ...filters, provider: e.target.value || undefined })}
+                />
+                <input
+                  type="text"
+                  placeholder="Model (e.g. gpt-4)..."
+                  className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
+                  value={filters.model || ''}
+                  onChange={(e) => setFilters({ ...filters, model: e.target.value || undefined })}
+                />
+              </div>
+            </div>
+
             <TraceList
               traces={traces}
               selectedId={selectedTrace?.requestId ?? null}

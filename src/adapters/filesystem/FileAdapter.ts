@@ -5,7 +5,8 @@ import type {
   MonitoringEvent,
   MonitoringStats,
   MetricsData,
-  PaginatedTraces
+  PaginatedTraces,
+  TraceFilters
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
@@ -34,7 +35,11 @@ export class FileAdapter implements MonitoringStore {
   async getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats> {
     const events = await this.loadEvents();
     const from = options?.from;
-    const filtered = from ? events.filter((e) => new Date(e.time) >= from) : events;
+    const to = options?.to;
+    let filtered = events;
+
+    if (from) filtered = filtered.filter((e) => new Date(e.time) >= from);
+    if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
 
     const requestEnds = filtered.filter((e) => e.eventType === "request.end");
     const requestErrors = filtered.filter((e) => e.eventType === "request.error");
@@ -55,7 +60,9 @@ export class FileAdapter implements MonitoringStore {
   async getMetrics(options?: { from?: Date; to?: Date }): Promise<MetricsData> {
     const events = await this.loadEvents();
     const from = options?.from || new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const filtered = events.filter((e) => new Date(e.time) >= from);
+    const to = options?.to;
+    let filtered = events.filter((e) => new Date(e.time) >= from);
+    if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
 
     return {
       totals: await this.getStats(options),
@@ -64,16 +71,47 @@ export class FileAdapter implements MonitoringStore {
     };
   }
 
-  async listTraces(options: { limit?: number; offset?: number } = {}): Promise<PaginatedTraces> {
+  async listTraces(
+    options: { limit?: number; offset?: number } & TraceFilters = {}
+  ): Promise<PaginatedTraces> {
     const events = await this.loadEvents();
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
 
-    const completed = events
-      .filter((e) => e.eventType === "request.end" || e.eventType === "request.error")
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    let filtered = events.filter(
+      (e) => e.eventType === "request.end" || e.eventType === "request.error"
+    );
 
-    const items = completed.slice(offset, offset + limit).map(
+    if (options.requestId) {
+      filtered = filtered.filter((e) => e.requestId === options.requestId);
+    }
+    if (options.model) {
+      filtered = filtered.filter((e) => e.model === options.model);
+    }
+    if (options.provider) {
+      filtered = filtered.filter((e) => e.provider === options.provider);
+    }
+    if (options.minCost !== undefined) {
+      filtered = filtered.filter((e) => (e.cost || 0) >= options.minCost!);
+    }
+    if (options.minLatency !== undefined) {
+      filtered = filtered.filter((e) => (e.duration || 0) >= options.minLatency!);
+    }
+    if (options.status === "success") {
+      filtered = filtered.filter((e) => e.eventType === "request.end");
+    } else if (options.status === "error") {
+      filtered = filtered.filter((e) => e.eventType === "request.error");
+    }
+    if (options.from) {
+      filtered = filtered.filter((e) => new Date(e.time) >= options.from!);
+    }
+    if (options.to) {
+      filtered = filtered.filter((e) => new Date(e.time) <= options.to!);
+    }
+
+    filtered.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    const items = filtered.slice(offset, offset + limit).map(
       (e) =>
         ({
           requestId: e.requestId,
@@ -89,7 +127,7 @@ export class FileAdapter implements MonitoringStore {
         }) as any
     );
 
-    return { items, total: completed.length, limit, offset };
+    return { items, total: filtered.length, limit, offset };
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {

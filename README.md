@@ -52,15 +52,19 @@ _Note: For non-Prisma users, a raw SQL migration is available at `migrations/001
 ### 2. Integration
 
 ```ts
+import { createLLM } from "@node-llm/core";
 import { createPrismaMonitor } from "@node-llm/monitor";
 import { prisma } from "./db";
 
+// Create monitor with Prisma storage
 const monitor = createPrismaMonitor(prisma, {
-  captureContent: true // Optional: store full prompts/responses
+  captureContent: true // Optional: capture prompts/responses (scrubbed by default)
 });
 
+// Attach monitor as middleware - it automatically tracks all requests
 const llm = createLLM({
   provider: "openai",
+  model: "gpt-4o-mini",
   middlewares: [monitor]
 });
 ```
@@ -70,11 +74,13 @@ const llm = createLLM({
 NodeLLM Monitor includes built-in adapters for development and logging.
 
 ```ts
+import { Monitor, createFileMonitor } from "@node-llm/monitor";
+
 // 1. In-Memory (Great for Dev/CI)
-const monitor = Monitor.memory();
+const memoryMonitor = Monitor.memory();
 
 // 2. File-based (Persistent JSON log)
-const monitor = createFileMonitor("monitoring.log");
+const fileMonitor = createFileMonitor("./monitoring.log");
 ```
 
 ## Pluggable Storage (Non-Prisma)
@@ -89,15 +95,21 @@ If you aren't using Prisma, use our raw SQL migration:
 ### 2. Implement Custom Store
 
 ```ts
-import { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
+import { Monitor, MonitoringStore, MonitoringEvent, Stats } from "@node-llm/monitor";
 
 class CustomStore implements MonitoringStore {
-  async saveEvent(event: MonitoringEvent) {
+  async saveEvent(event: MonitoringEvent): Promise<void> {
     // Your DB logic here: INSERT INTO monitoring_events ...
   }
 
-  async getStats() {
+  async getStats(filter?: { from?: Date }): Promise<Stats> {
     // Return aggregated stats for the dashboard
+    return {
+      totalRequests: 0,
+      totalCost: 0,
+      avgDuration: 0,
+      errorRate: 0
+    };
   }
 }
 
@@ -123,14 +135,25 @@ Inspect individual requests with full execution flow, including tool calls, timi
 ### Launch the Dashboard
 
 ```ts
-import { createMonitorMiddleware } from "@node-llm/monitor/ui";
 import express from "express";
+import { PrismaClient } from "@prisma/client";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
 
-// Ensure you use the same adapter instance
+const prisma = new PrismaClient();
 const app = express();
-app.use("/monitor", createMonitorMiddleware(adapter));
 
-app.listen(3000);
+// Create dashboard - pass Prisma client directly (auto-wrapped in adapter)
+const dashboard = new MonitorDashboard(prisma, {
+  basePath: "/monitor",
+  cors: false // Recommended: same-origin only for security
+});
+
+// Dashboard handles its own routing under basePath
+app.use(dashboard.middleware());
+
+app.listen(3000, () => {
+  console.log("Dashboard available at http://localhost:3000/monitor");
+});
 ```
 
 ## Operational Metadata
@@ -138,8 +161,12 @@ app.listen(3000);
 Capture granular operational metrics without changing execution semantics:
 
 ```ts
-// Enrich with environment, retries, and timing breakdowns
-const payload = monitor.enrichWithEnvironment(
+import { Monitor, createPrismaMonitor } from "@node-llm/monitor";
+
+const monitor = createPrismaMonitor(prisma);
+
+// Enrich with environment context
+let payload = monitor.enrichWithEnvironment(
   {},
   {
     serviceName: "hr-api",
@@ -147,8 +174,17 @@ const payload = monitor.enrichWithEnvironment(
   }
 );
 
-const result = await llm.chat(messages, {
-  sessionId: "session-123"
+// Add timing breakdown for debugging
+payload = monitor.enrichWithTiming(payload, {
+  queueTime: 5,
+  networkTime: 45,
+  providerLatency: 850
+});
+
+// Track retries for reliability analysis
+payload = monitor.enrichWithRetry(payload, {
+  retryCount: 2,
+  retryReason: "rate_limit"
 });
 ```
 
@@ -157,17 +193,29 @@ const result = await llm.chat(messages, {
 While optimized as a native middleware for NodeLLM, the monitor is a generic telemetry engine. You can use it manually with any library (Vercel AI SDK, LangChain, or raw OpenAI):
 
 ```ts
-const ctx = { requestId: "req_123", provider: "openai", model: "gpt-4" };
+import { Monitor } from "@node-llm/monitor";
+import type { MinimalContext } from "@node-llm/monitor";
+
+const monitor = Monitor.memory();
+
+// Create context object (implements MinimalContext interface)
+const ctx: MinimalContext = {
+  requestId: "req_123",
+  provider: "openai",
+  model: "gpt-4o",
+  state: {} // Required for metrics tracking
+};
 
 // 1. Start tracking
 await monitor.onRequest(ctx);
 
-// 2. Track tool calls
-await monitor.onToolCallStart(ctx, { function: { name: "get_weather" } });
-await monitor.onToolCallEnd(ctx, { result: "22°C" });
+// 2. Track tool calls (optional)
+await monitor.onToolCallStart(ctx, { id: "call_1", function: { name: "get_weather" } });
+await monitor.onToolCallEnd(ctx, { id: "call_1" }, "22°C");
 
-// 3. Finalize
+// 3. Finalize with result
 await monitor.onResponse(ctx, {
+  toString: () => "The weather is 22°C",
   usage: { input_tokens: 100, output_tokens: 50, cost: 0.002 }
 });
 ```

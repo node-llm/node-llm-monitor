@@ -61,6 +61,54 @@ describe("FileAdapter", () => {
     expect(traces.items).toHaveLength(0);
   });
 
+  it("should filter traces by criteria", async () => {
+    // Setup generic trace
+    await adapter.saveEvent(
+      createEvent({
+        requestId: "req-1",
+        provider: "openai",
+        model: "gpt-4",
+        cost: 0.1,
+        duration: 100
+      })
+    );
+    // Setup different trace
+    await adapter.saveEvent(
+      createEvent({
+        requestId: "req-2",
+        provider: "anthropic",
+        model: "claude-2",
+        cost: 0.5,
+        duration: 500,
+        eventType: "request.error"
+      })
+    );
+
+    // Filter by Request ID
+    let traces = await adapter.listTraces({ requestId: "req-1" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.requestId).toBe("req-1");
+
+    // Filter by Provider
+    traces = await adapter.listTraces({ provider: "anthropic" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.provider).toBe("anthropic");
+
+    // Filter by Status
+    traces = await adapter.listTraces({ status: "success" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.requestId).toBe("req-1");
+
+    traces = await adapter.listTraces({ status: "error" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.requestId).toBe("req-2");
+
+    // Filter by Min Cost
+    traces = await adapter.listTraces({ minCost: 0.4 });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.requestId).toBe("req-2");
+  });
+
   it("should return correct list of traces", async () => {
     await adapter.saveEvent(createEvent({ requestId: "req-1", eventType: "request.end" }));
     await adapter.saveEvent(createEvent({ requestId: "req-2", eventType: "request.error" }));

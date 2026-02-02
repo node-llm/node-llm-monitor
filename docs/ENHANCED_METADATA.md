@@ -237,10 +237,10 @@ const payload = monitor.enrichWithTiming({}, {
   toolTimeTotal: 200
 });
 
-// Dashboard query:
-// SELECT AVG(payload->>'timing'->>'providerLatency') 
+// Dashboard query (PostgreSQL):
+// SELECT AVG((payload->'timing'->>'providerLatency')::int) 
 // FROM monitoring_events 
-// WHERE eventType = 'request.end'
+// WHERE "eventType" = 'request.end'
 // GROUP BY provider, model
 
 // Result: Identify which provider/model is slowest
@@ -257,12 +257,12 @@ const payload = monitor.enrichWithRetry({}, {
   retryReason: 'rate_limit'
 });
 
-// Dashboard query:
+// Dashboard query (PostgreSQL):
 // SELECT provider, 
 //        COUNT(*) as total,
-//        AVG(payload->>'retry'->>'retryCount') as avg_retries
+//        AVG((payload->'retry'->>'retryCount')::int) as avg_retries
 // FROM monitoring_events
-// WHERE payload->>'retry' IS NOT NULL
+// WHERE payload->'retry' IS NOT NULL
 // GROUP BY provider
 
 // Result: Which provider needs rate limit increases?
@@ -279,13 +279,13 @@ const payload = monitor.enrichWithRequestMetadata({}, {
   responseSizeBytes: response.length
 });
 
-// Dashboard query:
+// Dashboard query (PostgreSQL):
 // SELECT 
-//   FLOOR(payload->>'request'->>'requestSizeBytes' / 1000) as size_kb,
+//   FLOOR((payload->'request'->>'requestSizeBytes')::int / 1000) as size_kb,
 //   AVG(cost) as avg_cost,
 //   COUNT(*) as count
 // FROM monitoring_events
-// WHERE eventType = 'request.end'
+// WHERE "eventType" = 'request.end'
 // GROUP BY size_kb
 // ORDER BY size_kb
 
@@ -309,13 +309,13 @@ const payloadB = monitor.enrichWithRequestMetadata({}, {
   templateId: 'analysis-prompt'
 });
 
-// Dashboard query:
+// Dashboard query (PostgreSQL):
 // SELECT 
-//   payload->>'request'->>'promptVersion' as version,
+//   payload->'request'->>'promptVersion' as version,
 //   AVG(duration) as avg_duration,
 //   AVG(cost) as avg_cost
 // FROM monitoring_events
-// WHERE payload->>'request'->>'templateId' = 'analysis-prompt'
+// WHERE payload->'request'->>'templateId' = 'analysis-prompt'
 // GROUP BY version
 
 // Result: Which prompt version is faster/cheaper?
@@ -385,27 +385,27 @@ const payload: EnhancedMonitoringPayload = {
 SELECT 
   provider,
   model,
-  AVG((payload->>'timing'->>'providerLatency')::int) as avg_latency_ms
+  AVG((payload->'timing'->>'providerLatency')::int) as avg_latency_ms
 FROM monitoring_events
-WHERE payload->>'timing' IS NOT NULL
+WHERE payload->'timing' IS NOT NULL
 GROUP BY provider, model
 ORDER BY avg_latency_ms DESC;
 
 -- Retry rate by provider
 SELECT 
   provider,
-  COUNT(*) FILTER (WHERE payload->>'retry' IS NOT NULL) * 100.0 / COUNT(*) as retry_rate
+  COUNT(*) FILTER (WHERE payload->'retry' IS NOT NULL) * 100.0 / COUNT(*) as retry_rate
 FROM monitoring_events
-WHERE event_type = 'request.end' OR event_type = 'request.error'
+WHERE "eventType" = 'request.end' OR "eventType" = 'request.error'
 GROUP BY provider;
 
 -- Cost by environment
 SELECT 
-  payload->>'environment'->>'environment' as env,
+  payload->'environment'->>'environment' as env,
   SUM(cost) as total_cost,
   COUNT(*) as requests
 FROM monitoring_events
-WHERE event_type = 'request.end'
+WHERE "eventType" = 'request.end'
 GROUP BY env;
 ```
 
@@ -504,7 +504,7 @@ Focus on metrics that answer specific questions:
 
 ## Examples
 
-See [`example-enhanced-metadata.ts`](../example-enhanced-metadata.ts) for comprehensive examples.
+See [`examples/dashboard.ts`](../examples/dashboard.ts) and [`examples/custom-adapter.ts`](../examples/custom-adapter.ts) for comprehensive examples.
 
 ---
 

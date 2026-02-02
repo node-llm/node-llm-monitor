@@ -14,6 +14,7 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
+    chunkSizeWarningLimit: 600,
   },
   server: {
     proxy: {

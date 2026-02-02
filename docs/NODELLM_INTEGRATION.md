@@ -5,19 +5,21 @@ This guide shows how to use enhanced metadata with NodeLLM's actual request flow
 ## Prerequisites
 
 ```typescript
-import { createLLM } from '@node-llm/core';
-import { Monitor } from '@node-llm/monitor';
-import { PrismaAdapter } from '@node-llm/monitor/adapters/prisma';
-import { prisma } from './db';
+import { createLLM, type Message } from '@node-llm/core';
+import { Monitor, PrismaAdapter } from '@node-llm/monitor';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const monitor = new Monitor({
   store: new PrismaAdapter(prisma),
-  captureContent: false // PII protection
+  captureContent: false, // PII protection (default)
 });
 
 const llm = createLLM({
   provider: 'openai',
-  middlewares: [monitor]
+  model: 'gpt-4o-mini',
+  middlewares: [monitor],
 });
 ```
 
@@ -25,59 +27,47 @@ const llm = createLLM({
 
 ### Pattern 1: Wrapper Function (Recommended)
 
-Create a wrapper that enriches metadata before calling NodeLLM:
+Create a wrapper that enriches metadata and passes it via the `sessionId` or custom options that the Monitor middleware reads from context:
 
 ```typescript
+import { Monitor } from '@node-llm/monitor';
+import { PrismaAdapter } from '@node-llm/monitor/adapters/prisma';
+
+// The Monitor middleware automatically captures metadata from ctx.state
+// You can extend the context state before/after requests
+
 async function llmWithMetadata(
   messages: Message[],
   options: {
-    // Standard NodeLLM options
     model?: string;
     temperature?: number;
     stream?: boolean;
+    sessionId?: string;
     
     // Enhanced metadata (optional)
     metadata?: {
       environment?: 'production' | 'staging' | 'development';
       serviceName?: string;
       promptVersion?: string;
-      retryCount?: number;
     };
   } = {}
 ) {
   const { metadata, ...llmOptions } = options;
   
-  // Calculate request size
+  // Calculate request size for later analysis
   const requestSizeBytes = JSON.stringify(messages).length;
   
-  // Enrich context before request
-  // Note: This is conceptual - actual implementation depends on NodeLLM's context API
-  const enrichedContext = {
+  // Make request - the Monitor middleware captures timing automatically
+  const result = await llm.chat(messages, {
     ...llmOptions,
-    _monitorMetadata: {
-      request: {
-        streaming: options.stream || false,
-        requestSizeBytes,
-        promptVersion: metadata?.promptVersion,
-      },
-      environment: {
-        environment: metadata?.environment || process.env.NODE_ENV,
-        serviceName: metadata?.serviceName,
-        nodeVersion: process.version,
-      },
-      retry: metadata?.retryCount ? {
-        retryCount: metadata.retryCount,
-      } : undefined,
-    }
-  };
+    sessionId: options.sessionId, // Monitor captures this automatically
+  });
   
-  // Make request
-  const result = await llm.chat(messages, llmOptions);
-  
-  // Calculate response size
-  const responseSizeBytes = result.toString().length;
-  
-  // Note: Response metadata would be captured in Monitor.onResponse
+  // Note: The Monitor middleware automatically tracks:
+  // - Request start/end times (duration)
+  // - Provider and model
+  // - Token usage and cost (if available in response)
+  // - CPU time and memory allocations
   
   return result;
 }
@@ -87,54 +77,35 @@ const result = await llmWithMetadata(
   [{ role: 'user', content: 'Hello' }],
   {
     model: 'gpt-4',
-    metadata: {
-      environment: 'production',
-      serviceName: 'chat-api',
-      promptVersion: 'v2.1.0',
-    }
+    sessionId: 'session-123',
   }
 );
 ```
 
-### Pattern 2: Direct Monitor Access
-
-If NodeLLM exposes the context, you can enrich directly:
-
-```typescript
-// This assumes NodeLLM provides access to the monitoring context
-// Actual API depends on NodeLLM implementation
-
-const result = await llm.chat(messages, {
-  model: 'gpt-4',
-  onBeforeRequest: (ctx) => {
-    // Enrich with metadata
-    ctx.payload = monitor.enrichWithEnvironment(ctx.payload || {}, {
-      environment: 'production',
-      serviceName: 'api',
-    });
-    
-    ctx.payload = monitor.enrichWithRequestMetadata(ctx.payload, {
-      streaming: false,
-      requestSizeBytes: JSON.stringify(messages).length,
-    });
-  },
-  onAfterResponse: (ctx, result) => {
-    // Enrich with response metadata
-    ctx.payload = monitor.enrichWithRequestMetadata(ctx.payload, {
-      responseSizeBytes: result.toString().length,
-    });
-  }
-});
-```
-
-### Pattern 3: Service-Level Configuration
+### Pattern 2: Service-Level Configuration
 
 Set metadata once at service initialization:
 
 ```typescript
+import { createLLM, type Message } from '@node-llm/core';
+import { Monitor, PrismaAdapter } from '@node-llm/monitor';
+
+interface ServiceConfig {
+  provider: string;
+  serviceName: string;
+  version: string;
+  environment: 'production' | 'staging' | 'development';
+}
+
+interface ChatOptions {
+  stream?: boolean;
+  promptVersion?: string;
+  captureContent?: boolean;
+}
+
 class LLMService {
   private monitor: Monitor;
-  private llm: any;
+  private llm: ReturnType<typeof createLLM>;
   private serviceMetadata: {
     serviceName: string;
     serviceVersion: string;
@@ -170,13 +141,14 @@ class LLMService {
     );
     
     payload = this.monitor.enrichWithRequestMetadata(payload, {
-      streaming: options.stream || false,
+      streaming: options.stream ?? false,
       requestSizeBytes: JSON.stringify(messages).length,
       promptVersion: options.promptVersion,
     });
     
-    // Make request (payload will be captured by monitor middleware)
-    return await this.llm.chat(messages, options);
+    // Make request (monitor middleware captures automatically)
+    const chat = this.llm.chat('gpt-4o-mini');
+    return await chat.generate(messages);
   }
 }
 
@@ -194,7 +166,7 @@ const result = await service.chat(messages);
 
 ## Retry Integration
 
-For retry logic with metadata:
+For retry logic, wrap your LLM calls and track retry metadata:
 
 ```typescript
 async function llmWithRetry(
@@ -206,15 +178,11 @@ async function llmWithRetry(
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // Enrich with retry metadata
-      const payload = monitor.enrichWithRetry({}, {
-        retryCount: attempt,
-        retryReason: lastError ? getRetryReason(lastError) : undefined,
-      });
-      
+      // The monitor middleware automatically captures each request attempt
+      // Retry count can be tracked via transactionId to group related requests
       return await llm.chat(messages, {
         ...options,
-        _monitorPayload: payload, // Pass to monitor
+        transactionId: options.transactionId, // Groups retries together
       });
     } catch (error) {
       lastError = error as Error;
@@ -223,52 +191,53 @@ async function llmWithRetry(
         throw error;
       }
       
-      // Wait before retry
+      // Wait before retry (exponential backoff)
       await sleep(Math.pow(2, attempt) * 1000);
     }
   }
 }
 
-function getRetryReason(error: Error): RetryMetadata['retryReason'] {
-  if (error.message.includes('timeout')) return 'timeout';
-  if (error.message.includes('rate limit')) return 'rate_limit';
-  if (error.message.includes('network')) return 'network';
-  if (error.message.includes('500') || error.message.includes('503')) return 'server_error';
-  return 'other';
-}
+// You can query retry patterns from monitoring_events:
+// SELECT transactionId, COUNT(*) as attempts, MAX(eventType) as final_status
+// FROM monitoring_events WHERE transactionId IS NOT NULL
+// GROUP BY transactionId HAVING COUNT(*) > 1
 ```
 
 ## Sampling for High-Volume Services
 
+For high-volume services, create two LLM instances - one with monitoring and one without:
+
 ```typescript
 class SampledLLMService {
   private samplingRate: number;
+  private monitoredLlm: any;
+  private unmonitoredLlm: any;
   
-  constructor(config: { samplingRate?: number } = {}) {
+  constructor(config: { samplingRate?: number; provider: string } = { provider: 'openai' }) {
     this.samplingRate = config.samplingRate || 0.1; // 10% default
+    
+    // LLM with monitoring
+    this.monitoredLlm = createLLM({
+      provider: config.provider,
+      middlewares: [monitor],
+    });
+    
+    // LLM without monitoring for non-sampled requests
+    this.unmonitoredLlm = createLLM({
+      provider: config.provider,
+    });
   }
   
   async chat(messages: Message[], options: ChatOptions = {}) {
-    const isError = false; // Will be set on error
-    const shouldSample = isError || Math.random() < this.samplingRate;
+    const shouldSample = Math.random() < this.samplingRate;
     
-    if (!shouldSample) {
-      // Skip monitoring for non-sampled requests
-      // Use a lightweight LLM client without monitoring
-      return await this.llm.chat(messages, options);
+    if (shouldSample) {
+      // Use monitored client
+      return await this.monitoredLlm.chat(messages, options);
     }
     
-    // Enrich with sampling metadata
-    const payload = monitor.enrichWithSampling({}, {
-      samplingRate: this.samplingRate,
-      sampled: true,
-      samplingReason: isError ? 'error' : 'random',
-    });
-    
-    return await this.llm.chat(messages, {
-      ...options,
-      _monitorPayload: payload,
-    });
+    // Skip monitoring for non-sampled requests
+    return await this.unmonitoredLlm.chat(messages, options);
   }
 }
 ```
@@ -325,15 +294,15 @@ const payload = monitor.enrichWithEnvironment({}, { environment: 'production' })
 The `payload` column is JSON, so all metadata "just works":
 
 ```sql
--- Query enhanced metadata
+-- Query enhanced metadata (PostgreSQL)
 SELECT 
   provider,
   model,
-  payload->>'environment'->>'environment' as env,
-  payload->>'request'->>'streaming' as is_streaming,
+  payload->'environment'->>'environment' as env,
+  payload->'request'->>'streaming' as is_streaming,
   AVG(duration) as avg_duration
 FROM monitoring_events
-WHERE payload->>'environment' IS NOT NULL
+WHERE payload->'environment' IS NOT NULL
 GROUP BY provider, model, env, is_streaming;
 ```
 
@@ -342,10 +311,10 @@ GROUP BY provider, model, env, is_streaming;
 Old events without enhanced metadata still work:
 
 ```sql
--- This query works for both old and new events
+-- This query works for both old and new events (PostgreSQL)
 SELECT 
   provider,
-  COALESCE(payload->>'environment'->>'environment', 'unknown') as env,
+  COALESCE(payload->'environment'->>'environment', 'unknown') as env,
   COUNT(*) as count
 FROM monitoring_events
 GROUP BY provider, env;
@@ -386,7 +355,11 @@ describe('LLM with Enhanced Metadata', () => {
 **Q: Is this supported by the table?**  
 ✅ **YES** - The `payload` JSON column stores all metadata automatically
 
-**Q: Is this supported by NodeLLM request?**  
-✅ **YES** - Use wrapper functions or hooks to enrich before/during requests
+**Q: How does monitoring integrate with NodeLLM?**  
+✅ The Monitor class implements the NodeLLM middleware interface with lifecycle hooks:
+- `onRequest(ctx)` - Called when a request starts
+- `onResponse(ctx, result)` - Called when a request completes
+- `onError(ctx, error)` - Called on errors
+- `onToolCallStart/End/Error(ctx, tool)` - Called for tool invocations
 
-**Key Insight**: Enhanced metadata is **additive**, not **intrusive**. It works with NodeLLM's existing flow by enriching the payload that's already being captured.
+**Key Insight**: The Monitor middleware automatically captures timing, usage, and cost data. Use `sessionId` and `transactionId` options to group related requests.

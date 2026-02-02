@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-02-02
+
+### Features
+
+- **Trace Filtering**: Added comprehensive filtering capabilities to the Dashboard and API.
+  - Filter by **Request ID**, **Status** (success/error), **Provider**, and **Model**.
+  - **Numeric Filters**: Added support for filtering by **Minimum Cost** and **Minimum Latency**.
+  - **Date Ranges**: Robust support for `from` and `to` date filters across all adapters.
+- **Enhanced Dashboard**: Introduced a new Filter Bar component for real-time trace search.
+- **Adapter Upgrades**: Implemented advanced filtering logic in `PrismaAdapter`, `MemoryAdapter`, and `FileAdapter`.
+
 ## [0.1.1] - 2026-02-01
 
 ### Improvements

@@ -126,11 +126,11 @@ jobs:
             echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Publish to npm
+      - name: Publish to npm (Trusted Publishing via OIDC)
         if: steps.check_version.outputs.version_changed == 'true'
-        run: pnpm publish --access public --no-git-checks --provenance
+        run: npm publish --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
 
       - name: Create GitHub Release
         if: steps.check_version.outputs.version_changed == 'true'

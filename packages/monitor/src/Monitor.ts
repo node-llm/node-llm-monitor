@@ -57,6 +57,13 @@ export class Monitor {
   }
 
   /**
+   * Returns the underlying monitoring store
+   */
+  public getStore(): MonitoringStore {
+    return this.store;
+  }
+
+  /**
    * Scrub content if scrubber is configured
    */
   private scrubContent<T>(content: T): T {

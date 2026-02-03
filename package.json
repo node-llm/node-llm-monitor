@@ -18,5 +18,13 @@
       "prettier --write"
     ]
   },
-  "packageManager": "pnpm@10.26.0"
+  "packageManager": "pnpm@10.26.0",
+  "pnpm": {
+    "overrides": {
+      "undici": ">=6.23.0",
+      "lodash": ">=4.17.23",
+      "lodash-es": ">=4.17.23",
+      "esbuild": ">=0.25.0"
+    }
+  }
 }

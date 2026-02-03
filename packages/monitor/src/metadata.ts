@@ -172,3 +172,38 @@ export function createEnhancedPayload(
     ...metadata
   };
 }
+
+/**
+ * Simple cost estimation helper
+ */
+export function estimateCost(
+  provider: string,
+  model: string,
+  promptTokens: number,
+  completionTokens: number
+): number {
+  // Very rough estimation just to have a number
+  // In production this should use a real pricing catalog
+  let inputRate = 0.0;
+  let outputRate = 0.0;
+
+  if (provider.includes("openai")) {
+    if (model.includes("gpt-4")) {
+      inputRate = 30 / 1000000;
+      outputRate = 60 / 1000000;
+    } else {
+      inputRate = 0.5 / 1000000;
+      outputRate = 1.5 / 1000000;
+    }
+  } else if (provider.includes("anthropic")) {
+    if (model.includes("opus")) {
+      inputRate = 15 / 1000000;
+      outputRate = 75 / 1000000;
+    } else {
+      inputRate = 3 / 1000000;
+      outputRate = 15 / 1000000;
+    }
+  }
+
+  return promptTokens * inputRate + completionTokens * outputRate;
+}

@@ -10,7 +10,7 @@
 
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { Monitor } from "../../src/Monitor.js";
+import { Monitor } from "@node-llm/monitor";
 import { randomUUID } from "crypto";
 
 async function main() {

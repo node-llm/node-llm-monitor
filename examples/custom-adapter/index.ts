@@ -106,8 +106,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(4000, () => {
-  console.log("\n🚀 Custom Adapter Demo running at http://localhost:4000/monitor");
+server.listen(3333, () => {
+  console.log("\n🚀 Custom Adapter Demo running at http://localhost:3333/monitor");
 });
 
 // --- SIMULATION ---

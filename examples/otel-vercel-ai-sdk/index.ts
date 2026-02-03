@@ -32,10 +32,10 @@ async function main() {
 
   // 4. Setup a lightweight Express server to host the Monitor Dashboard
   const app = express();
-  const port = 3001;
+  const port = 3333;
 
   // Use the monitor's built-in dashboard middleware
-  // You can access it at http://localhost:3001/dashboard
+  // You can access it at http://localhost:3333/dashboard
   app.use(createMonitorMiddleware(monitor.getStore(), { basePath: "/dashboard" }));
 
   app.get("/", (req, res) => {

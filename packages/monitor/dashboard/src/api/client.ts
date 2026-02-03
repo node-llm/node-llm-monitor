@@ -1,12 +1,20 @@
-import type { MonitoringStats, PaginatedTraces, MonitoringEvent, MetricsData, TraceFilters } from '../types';
+import type {
+  MonitoringStats,
+  PaginatedTraces,
+  MonitoringEvent,
+  MetricsData,
+  TraceFilters
+} from "../types";
 
-const API_BASE = './api';
-
+const API_BASE = "./api";
 
 class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
@@ -16,21 +24,21 @@ class ApiClient {
   async fetchJson<T>(url: string, key: string): Promise<T> {
     // Cancel previous request for this key
     this.controllers.get(key)?.abort();
-    
+
     const controller = new AbortController();
     this.controllers.set(key, controller);
-    
+
     try {
       const response = await fetch(url, { signal: controller.signal });
-      
+
       if (!response.ok) {
         throw new ApiError(response.status, `HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       return response.json();
     } catch (error) {
       // Don't throw on abort - it's expected behavior
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         throw error;
       }
       throw error;
@@ -41,7 +49,7 @@ class ApiClient {
 
   cleanup() {
     // Cancel all pending requests
-    this.controllers.forEach(controller => controller.abort());
+    this.controllers.forEach((controller) => controller.abort());
     this.controllers.clear();
   }
 }
@@ -54,9 +62,12 @@ export const api = {
    */
   async getStats(options?: { from?: Date }): Promise<MonitoringStats> {
     const params = new URLSearchParams();
-    if (options?.from) params.set('from', options.from.toISOString());
+    if (options?.from) params.set("from", options.from.toISOString());
     const query = params.toString();
-    return client.fetchJson<MonitoringStats>(`${API_BASE}/stats${query ? `?${query}` : ''}`, 'stats');
+    return client.fetchJson<MonitoringStats>(
+      `${API_BASE}/stats${query ? `?${query}` : ""}`,
+      "stats"
+    );
   },
 
   /**
@@ -64,37 +75,49 @@ export const api = {
    */
   async getMetrics(options?: { from?: Date }): Promise<MetricsData> {
     const params = new URLSearchParams();
-    if (options?.from) params.set('from', options.from.toISOString());
+    if (options?.from) params.set("from", options.from.toISOString());
     const query = params.toString();
-    return client.fetchJson<MetricsData>(`${API_BASE}/metrics${query ? `?${query}` : ''}`, 'metrics');
+    return client.fetchJson<MetricsData>(
+      `${API_BASE}/metrics${query ? `?${query}` : ""}`,
+      "metrics"
+    );
   },
 
   /**
    * Get paginated list of traces
    */
-  async getTraces(options: { limit?: number; offset?: number } & TraceFilters = {}): Promise<PaginatedTraces> {
+  async getTraces(
+    options: { limit?: number; offset?: number } & TraceFilters = {}
+  ): Promise<PaginatedTraces> {
     const params = new URLSearchParams();
-    if (options.limit) params.set('limit', options.limit.toString());
-    if (options.offset) params.set('offset', options.offset.toString());
-    if (options.from) params.set('from', options.from.toISOString());
-    if (options.to) params.set('to', options.to.toISOString());
+    if (options.limit) params.set("limit", options.limit.toString());
+    if (options.offset) params.set("offset", options.offset.toString());
+    if (options.from) params.set("from", options.from.toISOString());
+    if (options.to) params.set("to", options.to.toISOString());
 
-    if (options.requestId) params.set('requestId', options.requestId);
-    if (options.status) params.set('status', options.status);
-    if (options.model) params.set('model', options.model);
-    if (options.provider) params.set('provider', options.provider);
-    if (options.minCost !== undefined) params.set('minCost', options.minCost.toString());
-    if (options.minLatency !== undefined) params.set('minLatency', options.minLatency.toString());
-    
+    if (options.requestId) params.set("requestId", options.requestId);
+    if (options.query) params.set("query", options.query);
+    if (options.status) params.set("status", options.status);
+    if (options.model) params.set("model", options.model);
+    if (options.provider) params.set("provider", options.provider);
+    if (options.minCost !== undefined) params.set("minCost", options.minCost.toString());
+    if (options.minLatency !== undefined) params.set("minLatency", options.minLatency.toString());
+
     const query = params.toString();
-    return client.fetchJson<PaginatedTraces>(`${API_BASE}/traces${query ? `?${query}` : ''}`, 'traces');
+    return client.fetchJson<PaginatedTraces>(
+      `${API_BASE}/traces${query ? `?${query}` : ""}`,
+      "traces"
+    );
   },
 
   /**
    * Get events for a specific request
    */
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {
-    return client.fetchJson<MonitoringEvent[]>(`${API_BASE}/events?requestId=${encodeURIComponent(requestId)}`, `events-${requestId}`);
+    return client.fetchJson<MonitoringEvent[]>(
+      `${API_BASE}/events?requestId=${encodeURIComponent(requestId)}`,
+      `events-${requestId}`
+    );
   },
 
   /**

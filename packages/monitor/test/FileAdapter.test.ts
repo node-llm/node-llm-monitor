@@ -107,6 +107,14 @@ describe("FileAdapter", () => {
     traces = await adapter.listTraces({ minCost: 0.4 });
     expect(traces.items).toHaveLength(1);
     expect(traces.items[0]!.requestId).toBe("req-2");
+
+    // partial/case-insensitive match (NEW)
+    traces = await adapter.listTraces({ model: "GPT" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.model).toBe("gpt-4");
+
+    traces = await adapter.listTraces({ requestId: "REQ-" });
+    expect(traces.items).toHaveLength(2);
   });
 
   it("should return correct list of traces", async () => {

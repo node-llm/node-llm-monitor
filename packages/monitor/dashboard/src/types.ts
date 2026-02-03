@@ -2,12 +2,12 @@
 // These mirror the types in src/types.ts
 
 export type EventType =
-  | 'request.start'
-  | 'request.end'
-  | 'request.error'
-  | 'tool.start'
-  | 'tool.end'
-  | 'tool.error';
+  | "request.start"
+  | "request.end"
+  | "request.error"
+  | "tool.start"
+  | "tool.end"
+  | "tool.error";
 
 export interface MonitoringEvent {
   id: string;
@@ -69,7 +69,7 @@ export interface TraceSummary {
   cost?: number;
   cpuTime?: number;
   allocations?: number;
-  status: 'success' | 'error' | 'running';
+  status: "success" | "error" | "running";
 }
 
 export interface PaginatedTraces {
@@ -79,11 +79,12 @@ export interface PaginatedTraces {
   offset: number;
 }
 
-export type TimeRange = '1h' | '24h' | '7d' | '30d' | 'custom';
+export type TimeRange = "1h" | "24h" | "7d" | "30d" | "custom";
 
 export interface TraceFilters {
   requestId?: string;
-  status?: 'success' | 'error';
+  query?: string;
+  status?: "success" | "error";
   model?: string;
   provider?: string;
   minCost?: number;

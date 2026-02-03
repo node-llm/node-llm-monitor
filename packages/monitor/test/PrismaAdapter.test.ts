@@ -296,9 +296,9 @@ describe("PrismaAdapter", () => {
       expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            requestId: "req-1",
-            model: "gpt-4",
-            provider: "openai",
+            requestId: { contains: "req-1", mode: "insensitive" },
+            model: { contains: "gpt-4", mode: "insensitive" },
+            provider: { contains: "openai", mode: "insensitive" },
             eventType: "request.error",
             cost: { gte: 0.5 },
             duration: { gte: 1000 },

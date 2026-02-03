@@ -181,8 +181,13 @@ export class MonitorDashboard {
         const requestId = url.searchParams.get("requestId");
         if (requestId) options.requestId = requestId;
 
-        const status = url.searchParams.get("status");
-        if (status === "success" || status === "error") options.status = status;
+        const query = url.searchParams.get("query");
+        if (query) options.query = query;
+
+        const status = url.searchParams.get("status")?.toLowerCase();
+        if (status === "success" || status === "error") {
+          options.status = status;
+        }
 
         const model = url.searchParams.get("model");
         if (model) options.model = model;
@@ -196,6 +201,7 @@ export class MonitorDashboard {
         const minLatency = url.searchParams.get("minLatency");
         if (minLatency) options.minLatency = parseInt(minLatency);
 
+        console.log(`[MonitorDashboard] Fetching traces with filters:`, options);
         const traces = await this.store.listTraces(options);
         this.sendJson(res, traces, req);
       } catch (error) {

@@ -9,6 +9,78 @@ import type {
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
+/**
+ * Builds Prisma WHERE clause from trace filters.
+ * Keeps filtering logic centralized and easier to maintain.
+ */
+function buildPrismaWhereClause(options: TraceFilters): Record<string, any> {
+  const where: Record<string, any> = {
+    eventType: { in: ["request.end", "request.error"] }
+  };
+
+  // Text search filters - case-insensitive partial matching
+  if (options.requestId) {
+    where.requestId = { contains: options.requestId, mode: "insensitive" };
+  }
+
+  if (options.query) {
+    where.OR = [
+      { requestId: { contains: options.query, mode: "insensitive" } },
+      { model: { contains: options.query, mode: "insensitive" } },
+      { provider: { contains: options.query, mode: "insensitive" } }
+    ];
+  }
+
+  if (options.model) {
+    where.model = { contains: options.model, mode: "insensitive" };
+  }
+
+  if (options.provider) {
+    where.provider = { contains: options.provider, mode: "insensitive" };
+  }
+
+  // Status filter - overrides eventType
+  if (options.status) {
+    where.eventType = options.status.toLowerCase() === "success" ? "request.end" : "request.error";
+  }
+
+  // Numeric threshold filters
+  if (options.minCost !== undefined) {
+    where.cost = { gte: options.minCost };
+  }
+
+  if (options.minLatency !== undefined) {
+    where.duration = { gte: options.minLatency };
+  }
+
+  // Date range filters
+  if (options.from || options.to) {
+    where.time = {};
+    if (options.from) where.time.gte = options.from;
+    if (options.to) where.time.lte = options.to;
+  }
+
+  return where;
+}
+
+/**
+ * Converts a Prisma event record to a TraceSummary.
+ */
+function prismaEventToTraceSummary(event: any): TraceSummary {
+  return {
+    requestId: event.requestId,
+    provider: event.provider,
+    model: event.model,
+    startTime: new Date(event.time.getTime() - (event.duration || 0)),
+    endTime: event.time,
+    duration: event.duration,
+    cost: event.cost,
+    cpuTime: event.cpuTime,
+    allocations: event.allocations,
+    status: event.eventType === "request.end" ? "success" : "error"
+  };
+}
+
 export class PrismaAdapter implements MonitoringStore {
   private validated = false;
 
@@ -123,29 +195,7 @@ export class PrismaAdapter implements MonitoringStore {
     this.ensureValidated();
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
-
-    const where: any = {
-      eventType: { in: ["request.end", "request.error"] }
-    };
-
-    if (options.status === "success") {
-      where.eventType = "request.end";
-    } else if (options.status === "error") {
-      where.eventType = "request.error";
-    }
-
-    if (options.requestId) where.requestId = options.requestId;
-    if (options.model) where.model = options.model;
-    if (options.provider) where.provider = options.provider;
-
-    if (options.minCost !== undefined) where.cost = { gte: options.minCost };
-    if (options.minLatency !== undefined) where.duration = { gte: options.minLatency };
-
-    if (options.from || options.to) {
-      where.time = {};
-      if (options.from) where.time.gte = options.from;
-      if (options.to) where.time.lte = options.to;
-    }
+    const where = buildPrismaWhereClause(options);
 
     const [items, total] = await Promise.all([
       this.model.findMany({
@@ -157,20 +207,12 @@ export class PrismaAdapter implements MonitoringStore {
       this.model.count({ where })
     ]);
 
-    const summaries: TraceSummary[] = items.map((e: any) => ({
-      requestId: e.requestId,
-      provider: e.provider,
-      model: e.model,
-      startTime: new Date(e.time.getTime() - (e.duration || 0)),
-      endTime: e.time,
-      duration: e.duration,
-      cost: e.cost,
-      cpuTime: e.cpuTime,
-      allocations: e.allocations,
-      status: e.eventType === "request.end" ? "success" : "error"
-    }));
-
-    return { items: summaries, total, limit, offset };
+    return {
+      items: items.map(prismaEventToTraceSummary),
+      total,
+      limit,
+      offset
+    };
   }
 
   /**

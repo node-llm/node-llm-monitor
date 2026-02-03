@@ -78,6 +78,7 @@ export interface PaginatedTraces {
 
 export interface TraceFilters {
   requestId?: string;
+  query?: string;
   status?: "success" | "error";
   model?: string;
   provider?: string;

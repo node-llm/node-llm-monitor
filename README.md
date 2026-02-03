@@ -138,7 +138,7 @@ pnpm test
 
 We provide detailed examples for various scenarios:
 
-- [`dashboard`](./examples/dashboard): Full demo with simulated real-world AI traffic.
+- [`demo`](./examples/demo): Full demo with simulated real-world AI traffic.
 - [`otel-vercel-ai-sdk`](./examples/otel-vercel-ai-sdk): Integration with Vercel AI SDK via OpenTelemetry.
 - [`vercel-ai-sdk`](./examples/vercel-ai-sdk): Manual instrumentation for Vercel AI SDK.
 - [`custom-adapter`](./examples/custom-adapter): How to implement your own `MonitoringStore`.

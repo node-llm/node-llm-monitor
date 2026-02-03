@@ -3,7 +3,6 @@ import type { MonitoringStore, MonitoringEvent, MetricsData } from "@node-llm/mo
 import { TimeSeriesBuilder } from "@node-llm/monitor";
 import { createServer } from "node:http";
 import { MonitorDashboard } from "@node-llm/monitor/ui";
-import "dotenv/config";
 
 // 1. Create a full-featured in-memory store for testing
 const memoryStore = {

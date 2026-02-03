@@ -51,9 +51,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "check-format": "prettier --check .",
-    "example": "npm run build:server && tsx examples/dashboard.ts",
-    "example:metadata": "npm run build:server && tsx examples/dashboard.ts",
-    "example:custom": "npm run build:server && tsx examples/custom-adapter.ts",
+    "example": "npm run build:server && tsx examples/demo/index.ts",
+    "example:metadata": "npm run build:server && tsx examples/demo/index.ts",
+    "example:custom": "npm run build:server && tsx examples/custom-adapter/index.ts",
     "prepublishOnly": "npm run test && npm run verify:all && npm run build",
     "prepare": "husky"
   },

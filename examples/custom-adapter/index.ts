@@ -1,14 +1,15 @@
-import { Monitor } from "../src/Monitor.js";
+import { Monitor } from "@node-llm/monitor";
 import type { 
   MonitoringStore, 
   MonitoringEvent, 
   MetricsData, 
   MonitoringStats,
   PaginatedTraces
-} from "../src/types.js";
-import { TimeSeriesBuilder } from "../src/aggregation/TimeSeriesBuilder.js";
+} from "@node-llm/monitor";
+import { TimeSeriesBuilder } from "@node-llm/monitor";
 import { createServer } from "node:http";
-import { MonitorDashboard } from "../src/ui/index.js";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
+import "dotenv/config";
 
 /**
  * Custom Simple Adapter (In-Memory for Demo)

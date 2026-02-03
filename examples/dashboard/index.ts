@@ -1,8 +1,9 @@
-import { Monitor } from "../src/Monitor.js";
-import type { MonitoringStore, MonitoringEvent, MetricsData } from "../src/types.js";
-import { TimeSeriesBuilder } from "../src/aggregation/TimeSeriesBuilder.js";
+import { Monitor } from "@node-llm/monitor";
+import type { MonitoringStore, MonitoringEvent, MetricsData } from "@node-llm/monitor";
+import { TimeSeriesBuilder } from "@node-llm/monitor";
 import { createServer } from "node:http";
-import { MonitorDashboard } from "../src/ui/index.js";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
+import "dotenv/config";
 
 // 1. Create a full-featured in-memory store for testing
 const memoryStore = {

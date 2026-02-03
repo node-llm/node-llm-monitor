@@ -9,7 +9,9 @@ import {
   extractProvider,
   extractModel,
   mapStatusToEventType,
-  generateRequestId
+  generateRequestId,
+  normalizeModelName,
+  normalizeProviderName
 } from "../src/utils.js";
 import { OTelReadableSpan } from "../src/types.js";
 
@@ -153,6 +155,39 @@ describe("otel utils", () => {
         "custom-provider"
       );
     });
+
+    it("should normalize Vercel AI SDK provider formats", () => {
+      expect(extractProvider({ modelProvider: "openai.responses" })).toBe("openai");
+      expect(extractProvider({ modelProvider: "anthropic.messages" })).toBe("anthropic");
+      expect(extractProvider({ modelProvider: "google.generativeai" })).toBe("google");
+    });
+
+    it("should normalize genAiSystem provider formats", () => {
+      expect(extractProvider({ genAiSystem: "openai.chat" })).toBe("openai");
+      expect(extractProvider({ genAiSystem: "anthropic.messages" })).toBe("anthropic");
+    });
+  });
+
+  describe("normalizeProviderName", () => {
+    it("should strip operation suffixes from provider names", () => {
+      expect(normalizeProviderName("openai.responses")).toBe("openai");
+      expect(normalizeProviderName("openai.chat")).toBe("openai");
+      expect(normalizeProviderName("anthropic.messages")).toBe("anthropic");
+      expect(normalizeProviderName("google.generativeai")).toBe("google");
+      expect(normalizeProviderName("google.vertex")).toBe("google");
+    });
+
+    it("should pass through standard provider names unchanged", () => {
+      expect(normalizeProviderName("openai")).toBe("openai");
+      expect(normalizeProviderName("anthropic")).toBe("anthropic");
+      expect(normalizeProviderName("google")).toBe("google");
+      expect(normalizeProviderName("custom-provider")).toBe("custom-provider");
+    });
+
+    it("should handle edge cases", () => {
+      expect(normalizeProviderName("")).toBe("");
+      expect(normalizeProviderName("unknown")).toBe("unknown");
+    });
   });
 
   describe("mapStatusToEventType", () => {
@@ -173,6 +208,71 @@ describe("otel utils", () => {
         })
       } as any;
       expect(generateRequestId(span)).toBe("otel_00112233_11223344");
+    });
+  });
+
+  describe("normalizeModelName", () => {
+    it("should normalize Vercel AI SDK openai.responses format", () => {
+      expect(normalizeModelName("openai.responses/gpt-4o-mini")).toBe("gpt-4o-mini");
+      expect(normalizeModelName("openai.responses/gpt-4o")).toBe("gpt-4o");
+      expect(normalizeModelName("openai.chat/gpt-3.5-turbo")).toBe("gpt-3.5-turbo");
+    });
+
+    it("should normalize Vercel AI SDK anthropic format", () => {
+      expect(normalizeModelName("anthropic.messages/claude-3-5-sonnet-20241022")).toBe(
+        "claude-3-5-sonnet-20241022"
+      );
+      expect(normalizeModelName("anthropic.messages/claude-3-opus")).toBe("claude-3-opus");
+    });
+
+    it("should normalize Vercel AI SDK google format", () => {
+      expect(normalizeModelName("google.generativeai/gemini-1.5-pro")).toBe("gemini-1.5-pro");
+      expect(normalizeModelName("google.vertex/gemini-pro")).toBe("gemini-pro");
+    });
+
+    it("should pass through standard model names unchanged", () => {
+      expect(normalizeModelName("gpt-4o-mini")).toBe("gpt-4o-mini");
+      expect(normalizeModelName("claude-3-5-sonnet")).toBe("claude-3-5-sonnet");
+      expect(normalizeModelName("gemini-pro")).toBe("gemini-pro");
+    });
+
+    it("should handle edge cases", () => {
+      expect(normalizeModelName("unknown")).toBe("unknown");
+      expect(normalizeModelName("")).toBe("");
+      expect(normalizeModelName("provider/")).toBe("provider/"); // returns original when last part is empty
+    });
+  });
+
+  describe("extractModel", () => {
+    it("should extract and normalize model from response model", () => {
+      expect(extractModel({ responseModel: "openai.responses/gpt-4o-mini" })).toBe("gpt-4o-mini");
+    });
+
+    it("should extract and normalize model from modelId", () => {
+      expect(extractModel({ modelId: "anthropic.messages/claude-3-5-sonnet" })).toBe(
+        "claude-3-5-sonnet"
+      );
+    });
+
+    it("should use genAi response model as fallback", () => {
+      expect(extractModel({ genAiResponseModel: "gpt-4" })).toBe("gpt-4");
+    });
+
+    it("should use genAi request model as fallback", () => {
+      expect(extractModel({ genAiRequestModel: "claude-3" })).toBe("claude-3");
+    });
+
+    it("should return unknown when no model is present", () => {
+      expect(extractModel({})).toBe("unknown");
+    });
+
+    it("should prefer responseModel over modelId", () => {
+      expect(
+        extractModel({
+          responseModel: "openai.responses/gpt-4o",
+          modelId: "gpt-3.5-turbo"
+        })
+      ).toBe("gpt-4o");
     });
   });
 });

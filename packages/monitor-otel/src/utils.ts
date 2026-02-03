@@ -177,6 +177,7 @@ export function calculateDurationMs(
 
 /**
  * Extract provider from model ID or attributes
+ * Handles Vercel AI SDK format (e.g., "openai.responses" -> "openai")
  * Examples:
  *   - "openai" from ai.model.provider
  *   - "openai" from "gpt-4o-mini"
@@ -185,12 +186,12 @@ export function calculateDurationMs(
 export function extractProvider(attrs: AISpanAttributes): string {
   // Direct provider attribute
   if (attrs.modelProvider) {
-    return attrs.modelProvider;
+    return normalizeProviderName(attrs.modelProvider);
   }
 
   // GenAI system
   if (attrs.genAiSystem) {
-    return attrs.genAiSystem;
+    return normalizeProviderName(attrs.genAiSystem);
   }
 
   // Infer from model ID
@@ -216,16 +217,50 @@ export function extractProvider(attrs: AISpanAttributes): string {
 }
 
 /**
+ * Normalize provider name by stripping operation suffixes
+ * Examples:
+ *   - "openai.responses" -> "openai"
+ *   - "anthropic.messages" -> "anthropic"
+ *   - "google.generativeai" -> "google"
+ *   - "openai" -> "openai" (unchanged)
+ */
+export function normalizeProviderName(provider: string): string {
+  if (provider.includes(".")) {
+    return provider.split(".")[0] || provider;
+  }
+  return provider;
+}
+
+/**
  * Extract model name from attributes
+ * Handles various formats including:
+ *   - "gpt-4o-mini" (standard)
+ *   - "openai.responses/gpt-4o-mini" (Vercel AI SDK format)
  */
 export function extractModel(attrs: AISpanAttributes): string {
-  return (
+  const rawModel =
     attrs.responseModel ||
     attrs.modelId ||
     attrs.genAiResponseModel ||
     attrs.genAiRequestModel ||
-    "unknown"
-  );
+    "unknown";
+
+  return normalizeModelName(rawModel);
+}
+
+/**
+ * Normalize model name by stripping provider prefixes
+ * Examples:
+ *   - "openai.responses/gpt-4o-mini" -> "gpt-4o-mini"
+ *   - "anthropic.messages/claude-3-5-sonnet" -> "claude-3-5-sonnet"
+ *   - "gpt-4o-mini" -> "gpt-4o-mini" (unchanged)
+ */
+export function normalizeModelName(model: string): string {
+  if (model.includes("/")) {
+    const parts = model.split("/");
+    return parts[parts.length - 1] || model;
+  }
+  return model;
 }
 
 /**

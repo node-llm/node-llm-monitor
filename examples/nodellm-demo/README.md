@@ -80,6 +80,8 @@ PORT=3333                       # Dashboard port
 
 ## Dashboard
 
+![Token Analytics Dashboard](../../docs/images/dashboard-tokens.png)
+
 - **Overview** - Requests, cost, latency, errors
 - **Providers** - Per-provider/model breakdown  
 - **Tokens** - Token analytics + time series

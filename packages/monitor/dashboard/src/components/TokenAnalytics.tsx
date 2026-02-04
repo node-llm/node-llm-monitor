@@ -205,7 +205,7 @@ export function TokenAnalytics({ metrics, loading }: TokenAnalyticsProps) {
             <p className="text-lg font-semibold text-gray-900">{totals.totalRequests}</p>
           </div>
           <div>
-            <p className="text-gray-500">Total Cost</p>
+            <p className="text-gray-500">Est. Cost</p>
             <p className="text-lg font-semibold text-amber-600">${totals.totalCost.toFixed(4)}</p>
           </div>
         </div>

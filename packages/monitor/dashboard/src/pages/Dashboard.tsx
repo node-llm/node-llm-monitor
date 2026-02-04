@@ -113,7 +113,7 @@ export function Dashboard() {
           color="default"
         />
         <StatCard
-          label="Total Cost"
+          label="Est. Cost"
           value={`$${(stats?.totalCost ?? 0).toFixed(4)}`}
           icon="💰"
           color="warning"

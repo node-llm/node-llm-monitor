@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { api } from '../api';
-import type { TraceSummary, MonitoringEvent, MetricsData, TimeRange, TraceFilters } from '../types';
-import { getTimeRangeDate } from '../components/TimeRangeFilter';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { api } from "../api";
+import type { TraceSummary, MonitoringEvent, MetricsData, TimeRange, TraceFilters } from "../types";
+import { getTimeRangeDate } from "../components/TimeRangeFilter";
 
 interface UseMonitorOptions {
   /** Polling interval in milliseconds. Set to 0 to disable. */
@@ -33,6 +33,9 @@ const DEFAULT_METRICS: MetricsData = {
     totalCost: 0,
     avgDuration: 0,
     errorRate: 0,
+    totalPromptTokens: 0,
+    totalCompletionTokens: 0,
+    avgTokensPerRequest: 0
   },
   byProvider: [],
   timeSeries: {
@@ -40,12 +43,14 @@ const DEFAULT_METRICS: MetricsData = {
     cost: [],
     duration: [],
     errors: [],
-  },
+    promptTokens: [],
+    completionTokens: []
+  }
 };
 
 export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
-  const { pollInterval = 5000, limit = 50, initialTimeRange = '24h' } = options;
-  
+  const { pollInterval = 5000, limit = 50, initialTimeRange = "24h" } = options;
+
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [traces, setTraces] = useState<TraceSummary[]>([]);
   const [selectedTrace, setSelectedTrace] = useState<TraceSummary | null>(null);
@@ -55,7 +60,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
   const [error, setError] = useState<Error | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
   const [filters, setFilters] = useState<TraceFilters>({});
-  
+
   const mountedRef = useRef(true);
 
   const fetchData = useCallback(async () => {
@@ -63,9 +68,9 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
       const from = getTimeRangeDate(timeRange);
       const [metricsData, tracesData] = await Promise.all([
         api.getMetrics({ from }),
-        api.getTraces({ limit, from, ...filters }),
+        api.getTraces({ limit, from, ...filters })
       ]);
-      
+
       if (mountedRef.current) {
         setMetrics(metricsData);
         setTraces(tracesData.items);
@@ -73,9 +78,9 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
       }
     } catch (err) {
       if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch data'));
+        setError(err instanceof Error ? err : new Error("Failed to fetch data"));
         // Use functional update to avoid stale closure
-        setMetrics(prev => prev || DEFAULT_METRICS);
+        setMetrics((prev) => prev || DEFAULT_METRICS);
       }
     } finally {
       if (mountedRef.current) {
@@ -86,12 +91,12 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
 
   const selectTrace = useCallback(async (trace: TraceSummary | null) => {
     setSelectedTrace(trace);
-    
+
     if (!trace) {
       setSelectedEvents([]);
       return;
     }
-    
+
     setEventsLoading(true);
     try {
       const events = await api.getEvents(trace.requestId);
@@ -99,7 +104,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
         setSelectedEvents(events);
       }
     } catch (err) {
-      console.error('Failed to fetch events:', err);
+      console.error("Failed to fetch events:", err);
       if (mountedRef.current) {
         setSelectedEvents([]);
       }
@@ -130,7 +135,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
   useEffect(() => {
     mountedRef.current = true;
     fetchData();
-    
+
     return () => {
       mountedRef.current = false;
       api.cleanup(); // Cancel pending requests
@@ -140,7 +145,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
   // Polling
   useEffect(() => {
     if (pollInterval <= 0) return;
-    
+
     const interval = setInterval(fetchData, pollInterval);
     return () => clearInterval(interval);
   }, [pollInterval, fetchData]);
@@ -157,6 +162,6 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     filters,
     setFilters: handleFiltersChange,
     selectTrace,
-    refresh,
+    refresh
   };
 }

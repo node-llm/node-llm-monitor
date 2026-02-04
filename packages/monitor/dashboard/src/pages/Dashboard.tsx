@@ -7,10 +7,11 @@ import {
   MetricsChart, 
   ProviderTable,
   TimeRangeFilter,
-  DebouncedInput
+  DebouncedInput,
+  TokenAnalytics
 } from '../components';
 
-type View = 'metrics' | 'traces';
+type View = 'metrics' | 'tokens' | 'traces';
 
 export function Dashboard() {
   const [view, setView] = useState<View>('metrics');
@@ -46,6 +47,16 @@ export function Dashboard() {
             }`}
           >
             📊 Metrics
+          </button>
+          <button
+            onClick={() => setView('tokens')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              view === 'tokens'
+                ? 'bg-monitor-accent text-white'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            🎯 Tokens
           </button>
           <button
             onClick={() => setView('traces')}
@@ -159,6 +170,12 @@ export function Dashboard() {
             />
           </div>
         </>
+      ) : view === 'tokens' ? (
+        /* Token Analytics View */
+        <TokenAnalytics 
+          metrics={metrics} 
+          loading={loading && !metrics} 
+        />
       ) : (
         /* Traces View */
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

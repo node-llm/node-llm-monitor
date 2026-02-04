@@ -32,6 +32,10 @@ export interface MonitoringStats {
   totalCost: number;
   avgDuration: number;
   errorRate: number;
+  // Token analytics
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  avgTokensPerRequest: number;
 }
 
 export interface ProviderStats {
@@ -41,6 +45,10 @@ export interface ProviderStats {
   cost: number;
   avgDuration: number;
   errorCount: number;
+  // Token analytics
+  promptTokens: number;
+  completionTokens: number;
+  costPer1kTokens: number;
 }
 
 export interface TimeSeriesPoint {
@@ -56,6 +64,9 @@ export interface MetricsData {
     cost: TimeSeriesPoint[];
     duration: TimeSeriesPoint[];
     errors: TimeSeriesPoint[];
+    // Token analytics
+    promptTokens: TimeSeriesPoint[];
+    completionTokens: TimeSeriesPoint[];
   };
 }
 
@@ -70,6 +81,9 @@ export interface TraceSummary {
   cpuTime?: number;
   allocations?: number;
   status: "success" | "error" | "running";
+  // Token analytics
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 export interface PaginatedTraces {

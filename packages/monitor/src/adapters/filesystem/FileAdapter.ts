@@ -9,7 +9,13 @@ import type {
   TraceFilters
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
-import { filterTraces, sortByTimeDesc, paginate, eventToTraceSummary } from "../filterTraces.js";
+import {
+  filterTraces,
+  sortByTimeDesc,
+  paginate,
+  eventToTraceSummary,
+  extractTokens
+} from "../filterTraces.js";
 
 /**
  * File-based store for local persistence without a database.
@@ -46,6 +52,16 @@ export class FileAdapter implements MonitoringStore {
     const requestErrors = filtered.filter((e) => e.eventType === "request.error");
     const totalRequests = requestEnds.length + requestErrors.length;
 
+    // Aggregate token counts
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    for (const event of requestEnds) {
+      const tokens = extractTokens(event);
+      totalPromptTokens += tokens.prompt;
+      totalCompletionTokens += tokens.completion;
+    }
+    const totalTokens = totalPromptTokens + totalCompletionTokens;
+
     return {
       totalRequests,
       totalCost: requestEnds.reduce((sum, e) => sum + (e.cost || 0), 0),
@@ -54,7 +70,10 @@ export class FileAdapter implements MonitoringStore {
           ? requestEnds.reduce((sum, e) => sum + (e.duration || 0), 0) /
             Math.max(requestEnds.length, 1)
           : 0,
-      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0
+      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
+      totalPromptTokens,
+      totalCompletionTokens,
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
     };
   }
 

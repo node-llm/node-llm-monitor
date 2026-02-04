@@ -67,7 +67,8 @@ function buildPrismaWhereClause(options: TraceFilters): Record<string, any> {
  * Converts a Prisma event record to a TraceSummary.
  */
 function prismaEventToTraceSummary(event: any): TraceSummary {
-  return {
+  const tokens = extractTokensFromPayload(event.payload);
+  const summary: TraceSummary = {
     requestId: event.requestId,
     provider: event.provider,
     model: event.model,
@@ -78,6 +79,43 @@ function prismaEventToTraceSummary(event: any): TraceSummary {
     cpuTime: event.cpuTime,
     allocations: event.allocations,
     status: event.eventType === "request.end" ? "success" : "error"
+  };
+
+  // Only set token properties if they have values
+  if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
+  if (tokens.completion > 0) summary.completionTokens = tokens.completion;
+
+  return summary;
+}
+
+/**
+ * Extract token counts from event payload.
+ */
+function extractTokensFromPayload(payload: any): { prompt: number; completion: number } {
+  if (!payload) return { prompt: 0, completion: 0 };
+
+  if (payload.usage) {
+    return {
+      // Support multiple naming conventions:
+      // - Vercel AI SDK: promptTokens/completionTokens
+      // - OpenAI snake_case: prompt_tokens/completion_tokens
+      // - Anthropic/industry: input_tokens/output_tokens
+      prompt:
+        payload.usage.promptTokens ||
+        payload.usage.prompt_tokens ||
+        payload.usage.input_tokens ||
+        0,
+      completion:
+        payload.usage.completionTokens ||
+        payload.usage.completion_tokens ||
+        payload.usage.output_tokens ||
+        0
+    };
+  }
+
+  return {
+    prompt: payload.promptTokens || payload.prompt_tokens || payload.input_tokens || 0,
+    completion: payload.completionTokens || payload.completion_tokens || payload.output_tokens || 0
   };
 }
 
@@ -142,20 +180,39 @@ export class PrismaAdapter implements MonitoringStore {
 
     const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
-    const [totalRequests, totalCostData, avgDurationData, errorCount] = await Promise.all([
-      this.model.count({
-        where: { ...where, eventType: { in: ["request.end", "request.error"] } }
-      }),
-      this.model.aggregate({ where, _sum: { cost: true } }),
-      this.model.aggregate({ where, _avg: { duration: true } }),
-      this.model.count({ where: { ...where, eventType: "request.error" } })
-    ]);
+    // Fetch events to calculate token counts (stored in JSON payload)
+    const [totalRequests, totalCostData, avgDurationData, errorCount, successEvents] =
+      await Promise.all([
+        this.model.count({
+          where: { ...where, eventType: { in: ["request.end", "request.error"] } }
+        }),
+        this.model.aggregate({ where, _sum: { cost: true } }),
+        this.model.aggregate({ where, _avg: { duration: true } }),
+        this.model.count({ where: { ...where, eventType: "request.error" } }),
+        this.model.findMany({
+          where: { ...where, eventType: "request.end" },
+          select: { payload: true }
+        })
+      ]);
+
+    // Aggregate token counts from payload
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    for (const event of successEvents) {
+      const tokens = extractTokensFromPayload(event.payload);
+      totalPromptTokens += tokens.prompt;
+      totalCompletionTokens += tokens.completion;
+    }
+    const totalTokens = totalPromptTokens + totalCompletionTokens;
 
     return {
       totalRequests,
       totalCost: totalCostData._sum.cost || 0,
       avgDuration: avgDurationData._avg.duration || 0,
-      errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0
+      errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0,
+      totalPromptTokens,
+      totalCompletionTokens,
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
     };
   }
 

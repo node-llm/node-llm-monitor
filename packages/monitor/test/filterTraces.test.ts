@@ -3,23 +3,30 @@ import {
   filterTraces,
   sortByTimeDesc,
   paginate,
-  eventToTraceSummary
+  eventToTraceSummary,
+  extractTokens
 } from "../src/adapters/filterTraces.js";
 import type { MonitoringEvent } from "../src/types.js";
 
 function createEvent(overrides: Partial<MonitoringEvent> = {}): MonitoringEvent {
   return {
+    id: "evt-" + Math.random().toString(36).slice(2, 10),
     requestId: "req-123",
     provider: "openai",
     model: "gpt-4",
     time: new Date("2026-02-01T10:00:00Z"),
+    createdAt: new Date("2026-02-01T10:00:00Z"),
     eventType: "request.end",
     cost: 0.05,
     duration: 500,
     cpuTime: 100,
     allocations: 1024,
-    inputTokens: 100,
-    outputTokens: 50,
+    payload: {
+      usage: {
+        promptTokens: 100,
+        completionTokens: 50
+      }
+    },
     ...overrides
   };
 }
@@ -235,5 +242,88 @@ describe("eventToTraceSummary", () => {
     const summary = eventToTraceSummary(event);
 
     expect(summary.startTime.getTime()).toBe(endTime.getTime() - 1000);
+  });
+
+  it("should include token counts from payload.usage", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          promptTokens: 150,
+          completionTokens: 75
+        }
+      }
+    });
+    const summary = eventToTraceSummary(event);
+
+    expect(summary.promptTokens).toBe(150);
+    expect(summary.completionTokens).toBe(75);
+  });
+
+  it("should not include token fields when zero", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0
+        }
+      }
+    });
+    const summary = eventToTraceSummary(event);
+
+    expect(summary.promptTokens).toBeUndefined();
+    expect(summary.completionTokens).toBeUndefined();
+  });
+});
+
+describe("extractTokens", () => {
+  it("should extract tokens from usage object", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          promptTokens: 100,
+          completionTokens: 50
+        }
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.prompt).toBe(100);
+    expect(tokens.completion).toBe(50);
+  });
+
+  it("should handle snake_case token fields", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          prompt_tokens: 200,
+          completion_tokens: 100
+        }
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.prompt).toBe(200);
+    expect(tokens.completion).toBe(100);
+  });
+
+  it("should handle direct token fields", () => {
+    const event = createEvent({
+      payload: {
+        promptTokens: 300,
+        completionTokens: 150
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.prompt).toBe(300);
+    expect(tokens.completion).toBe(150);
+  });
+
+  it("should return zeros for missing payload", () => {
+    const event = createEvent({ payload: {} });
+    const tokens = extractTokens(event);
+
+    expect(tokens.prompt).toBe(0);
+    expect(tokens.completion).toBe(0);
   });
 });

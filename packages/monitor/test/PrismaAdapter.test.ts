@@ -119,7 +119,10 @@ describe("PrismaAdapter", () => {
         totalRequests: 100,
         totalCost: 5.5,
         avgDuration: 250,
-        errorRate: 10
+        errorRate: 10,
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        avgTokensPerRequest: 0
       });
     });
 
@@ -191,7 +194,10 @@ describe("PrismaAdapter", () => {
         totalRequests: 2,
         totalCost: 0.03,
         avgDuration: 150,
-        errorRate: 0
+        errorRate: 0,
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        avgTokensPerRequest: 0
       });
 
       expect(result.byProvider).toHaveLength(2);

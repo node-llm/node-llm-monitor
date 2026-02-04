@@ -6,3 +6,4 @@ export { MetricsChart } from "./MetricsChart";
 export { ProviderTable } from "./ProviderTable";
 export { TimeRangeFilter, getTimeRangeDate } from "./TimeRangeFilter";
 export { DebouncedInput } from "./DebouncedInput";
+export { TokenAnalytics } from "./TokenAnalytics";

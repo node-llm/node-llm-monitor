@@ -6,6 +6,39 @@ import type { MonitoringEvent, TraceFilters, TraceSummary } from "../types.js";
 type FilterPredicate = (event: MonitoringEvent) => boolean;
 
 /**
+ * Extract token counts from event payload.
+ */
+export function extractTokens(event: MonitoringEvent): { prompt: number; completion: number } {
+  const payload = event.payload || {};
+
+  // Check usage object (most common)
+  if (payload.usage) {
+    return {
+      // Support multiple naming conventions:
+      // - Vercel AI SDK: promptTokens/completionTokens
+      // - OpenAI snake_case: prompt_tokens/completion_tokens
+      // - Anthropic/industry: input_tokens/output_tokens
+      prompt:
+        payload.usage.promptTokens ||
+        payload.usage.prompt_tokens ||
+        payload.usage.input_tokens ||
+        0,
+      completion:
+        payload.usage.completionTokens ||
+        payload.usage.completion_tokens ||
+        payload.usage.output_tokens ||
+        0
+    };
+  }
+
+  // Direct fields (some providers)
+  return {
+    prompt: payload.promptTokens || payload.prompt_tokens || payload.input_tokens || 0,
+    completion: payload.completionTokens || payload.completion_tokens || payload.output_tokens || 0
+  };
+}
+
+/**
  * Creates an array of filter predicates based on provided options.
  * This approach avoids deeply nested if statements and makes the filtering logic
  * more composable and testable.
@@ -116,6 +149,7 @@ export function paginate<T>(items: T[], limit: number, offset: number): T[] {
  * Converts a monitoring event to a trace summary.
  */
 export function eventToTraceSummary(event: MonitoringEvent): TraceSummary {
+  const tokens = extractTokens(event);
   const summary: TraceSummary = {
     requestId: event.requestId,
     provider: event.provider,
@@ -130,6 +164,8 @@ export function eventToTraceSummary(event: MonitoringEvent): TraceSummary {
   if (event.cost !== undefined) summary.cost = event.cost;
   if (event.cpuTime !== undefined) summary.cpuTime = event.cpuTime;
   if (event.allocations !== undefined) summary.allocations = event.allocations;
+  if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
+  if (tokens.completion > 0) summary.completionTokens = tokens.completion;
 
   return summary;
 }

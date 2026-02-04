@@ -1,0 +1,25 @@
+{
+  "name": "vercel-ai-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "test": "echo \"No tests for example\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.0",
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.25",
+    "@node-llm/monitor": "workspace:*",
+    "ai": "^6.0.68",
+    "dotenv": "^17.2.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}

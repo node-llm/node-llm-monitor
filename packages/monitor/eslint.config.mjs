@@ -21,10 +21,8 @@ export default tseslint.config(
       "**/node_modules/**",
       "docs/**",
       "examples/**",
-      "packages/monitor/dashboard/**", // Ignore bundled dashboard code
+      "dashboard/**",
       "*.config.js",
-      "*.config.mjs",
-      "*.config.ts",
       "eslint.config.mjs"
     ]
   },
@@ -32,7 +30,7 @@ export default tseslint.config(
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     languageOptions: {
       parserOptions: {
-        project: ["./packages/*/tsconfig.json"],
+        project: "./tsconfig.json",
         tsconfigRootDir: import.meta.dirname
       }
     },
@@ -47,8 +45,7 @@ export default tseslint.config(
         }
       ],
       "no-console": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "no-undef": "off" // TypeScript handles this better
+      "@typescript-eslint/ban-ts-comment": "off"
     }
   },
   {

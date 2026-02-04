@@ -22,9 +22,15 @@ Enhanced metadata extends NodeLLM Monitor's observability capabilities with **op
 ## Quick Start
 
 ```typescript
-import { Monitor } from '@node-llm/monitor';
+import { Monitor, createPrismaMonitor } from '@node-llm/monitor';
+import { PrismaClient } from '@prisma/client';
 
-const monitor = new Monitor({ store });
+const prisma = new PrismaClient();
+
+// Use factory functions for common setups
+const monitor = createPrismaMonitor(prisma);
+// Or for development: Monitor.memory()
+// Or for file logging: createFileMonitor('./monitoring.log')
 
 // Enrich payload with operational metadata
 const payload = monitor.enrichWithRequestMetadata(

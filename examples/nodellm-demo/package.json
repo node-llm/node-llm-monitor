@@ -1,0 +1,21 @@
+{
+  "name": "nodellm-monitor-demo",
+  "version": "1.0.0",
+  "description": "Comprehensive demo showcasing @node-llm/monitor with @node-llm/core - Chat, Streaming, Tools, Cost Guard",
+  "type": "module",
+  "scripts": {
+    "start": "tsx cli.ts",
+    "start:simple": "tsx cli.ts --no-streaming --no-tools",
+    "dashboard": "tsx cli.ts --dashboard-only"
+  },
+  "dependencies": {
+    "@node-llm/core": "^1.10.0",
+    "@node-llm/monitor": "workspace:*",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "@types/node": "^22.15.29"
+  }
+}

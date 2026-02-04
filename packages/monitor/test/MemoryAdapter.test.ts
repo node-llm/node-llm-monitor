@@ -129,6 +129,18 @@ describe("MemoryAdapter", () => {
     traces = await adapter.listTraces({ minLatency: 400 });
     expect(traces.items).toHaveLength(1);
     expect(traces.items[0]!.requestId).toBe("req-2");
+
+    // partial/case-insensitive match (NEW)
+    traces = await adapter.listTraces({ model: "GPT" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.model).toBe("gpt-4");
+
+    traces = await adapter.listTraces({ provider: "openai" });
+    expect(traces.items).toHaveLength(1);
+    expect(traces.items[0]!.provider).toBe("openai");
+
+    traces = await adapter.listTraces({ requestId: "REQ-" });
+    expect(traces.items).toHaveLength(2);
   });
 
   it("should return time-series metrics", async () => {

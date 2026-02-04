@@ -51,9 +51,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "check-format": "prettier --check .",
-    "example": "npm run build:server && tsx examples/dashboard.ts",
-    "example:metadata": "npm run build:server && tsx examples/dashboard.ts",
-    "example:custom": "npm run build:server && tsx examples/custom-adapter.ts",
+    "example": "npm run build:server && tsx examples/demo/index.ts",
+    "example:metadata": "npm run build:server && tsx examples/demo/index.ts",
+    "example:custom": "npm run build:server && tsx examples/custom-adapter/index.ts",
     "prepublishOnly": "npm run test && npm run verify:all && npm run build",
     "prepare": "husky"
   },
@@ -122,13 +122,5 @@
     "typescript-eslint": "^8.53.0",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
-  },
-  "pnpm": {
-    "overrides": {
-      "undici": ">=6.23.0",
-      "lodash": ">=4.17.23",
-      "lodash-es": ">=4.17.23",
-      "esbuild": ">=0.25.0"
-    }
   }
 }

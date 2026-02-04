@@ -1,95 +1,19 @@
-import { Monitor } from "../src/Monitor.js";
-import type { MonitoringStore, MonitoringEvent, MetricsData } from "../src/types.js";
-import { TimeSeriesBuilder } from "../src/aggregation/TimeSeriesBuilder.js";
+import { Monitor, MemoryAdapter } from "@node-llm/monitor";
+import type { MonitoringEvent } from "@node-llm/monitor";
 import { createServer } from "node:http";
-import { MonitorDashboard } from "../src/ui/index.js";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
 
-// 1. Create a full-featured in-memory store for testing
-const memoryStore = {
-  events: [] as MonitoringEvent[],
-  
-  async saveEvent(event: MonitoringEvent) {
-    this.events.push(event);
-    console.log(`[Store] Saved: ${event.eventType} (${event.model})`);
-  },
-  
-  async getEvents(requestId: string) {
-    return this.events.filter((e: MonitoringEvent) => e.requestId === requestId);
-  },
-  
-  async getStats(options?: { from?: Date; to?: Date }) {
-    const from = options?.from;
-    const filteredEvents = from 
-      ? this.events.filter(e => new Date(e.time) >= from)
-      : this.events;
-    
-    const requestEnds = filteredEvents.filter(e => e.eventType === "request.end");
-    const requestErrors = filteredEvents.filter(e => e.eventType === "request.error");
-    const totalRequests = requestEnds.length + requestErrors.length;
-    
-    return {
-      totalRequests,
-      totalCost: requestEnds.reduce((sum, e) => sum + (e.cost || 0), 0),
-      avgDuration: totalRequests > 0 
-        ? requestEnds.reduce((sum, e) => sum + (e.duration || 0), 0) / Math.max(requestEnds.length, 1)
-        : 0,
-      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
-    };
-  },
-  
-  async getMetrics(options?: { from?: Date; to?: Date }): Promise<MetricsData> {
-    const from = options?.from || new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const filteredEvents = this.events.filter(e => new Date(e.time) >= from);
-    
-    // Use TimeSeriesBuilder for aggregation
-    const builder = new TimeSeriesBuilder();
-    const totals = await this.getStats(options);
-    const byProvider = builder.buildProviderStats(filteredEvents);
-    const timeSeries = builder.build(filteredEvents);
-    
-    return {
-      totals,
-      byProvider,
-      timeSeries,
-    };
-  },
-  
-  async listTraces(options: { limit?: number; offset?: number } = {}) {
-    const limit = options.limit ?? 50;
-    const offset = options.offset ?? 0;
-    
-    // Get request.end and request.error events as traces
-    const completedEvents = this.events
-      .filter((e: MonitoringEvent) => e.eventType === "request.end" || e.eventType === "request.error")
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-    
-    const items = completedEvents
-      .slice(offset, offset + limit)
-      .map((e: MonitoringEvent) => ({
-        requestId: e.requestId,
-        provider: e.provider,
-        model: e.model,
-        startTime: new Date(new Date(e.time).getTime() - (e.duration || 0)),
-        endTime: e.time,
-        duration: e.duration,
-        cost: e.cost,
-        cpuTime: e.cpuTime,
-        allocations: e.allocations,
-        status: e.eventType === "request.end" ? "success" as const : "error" as const,
-      }));
-    
-    return { items, total: completedEvents.length, limit, offset };
-  }
-};
+// 1. Use the built-in MemoryAdapter for full filtering support
+const memoryStore = new MemoryAdapter();
 
 // 2. Initialize the Monitor
 const monitor = new Monitor({
-  store: memoryStore as MonitoringStore,
+  store: memoryStore,
   captureContent: true // Let's see the prompts
 });
 
 // 3. Create Dashboard instance
-const dashboard = new MonitorDashboard(memoryStore as any);
+const dashboard = new MonitorDashboard(memoryStore);
 
 // 4. Start a lightweight server for the dashboard
 const server = createServer(async (req, res) => {

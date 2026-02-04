@@ -1,18 +1,22 @@
-import { Monitor } from "../src/Monitor.js";
+import { Monitor } from "@node-llm/monitor";
 import type { 
   MonitoringStore, 
   MonitoringEvent, 
   MetricsData, 
   MonitoringStats,
-  PaginatedTraces
-} from "../src/types.js";
-import { TimeSeriesBuilder } from "../src/aggregation/TimeSeriesBuilder.js";
+  PaginatedTraces,
+  TraceFilters,
+  TraceSummary
+} from "@node-llm/monitor";
+import { TimeSeriesBuilder } from "@node-llm/monitor";
 import { createServer } from "node:http";
-import { MonitorDashboard } from "../src/ui/index.js";
+import { MonitorDashboard } from "@node-llm/monitor/ui";
+import "dotenv/config";
 
 /**
  * Custom Simple Adapter (In-Memory for Demo)
  * 
+ * This demonstrates how to build a custom adapter that supports filtering.
  * In a real production system, this would interact with Knex, pg, TypeORM,
  * or even a remote telemetry service.
  */
@@ -56,15 +60,65 @@ class SimpleLogStore implements MonitoringStore {
     };
   }
 
-  async listTraces(options: { limit?: number; offset?: number } = {}): Promise<PaginatedTraces> {
+  async listTraces(options: { limit?: number; offset?: number } & TraceFilters = {}): Promise<PaginatedTraces> {
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
-    
-    const completed = this.events
-      .filter(e => e.eventType === "request.end" || e.eventType === "request.error")
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
-    const items = completed.slice(offset, offset + limit).map(e => ({
+    // Start with terminal events only
+    let filtered = this.events.filter(
+      e => e.eventType === "request.end" || e.eventType === "request.error"
+    );
+
+    // Apply filters - case-insensitive partial matching
+    if (options.requestId) {
+      const search = options.requestId.toLowerCase();
+      filtered = filtered.filter(e => e.requestId.toLowerCase().includes(search));
+    }
+
+    if (options.query) {
+      const search = options.query.toLowerCase();
+      filtered = filtered.filter(e => 
+        e.requestId.toLowerCase().includes(search) ||
+        e.model.toLowerCase().includes(search) ||
+        e.provider.toLowerCase().includes(search)
+      );
+    }
+
+    if (options.provider) {
+      const search = options.provider.toLowerCase();
+      filtered = filtered.filter(e => e.provider.toLowerCase().includes(search));
+    }
+
+    if (options.model) {
+      const search = options.model.toLowerCase();
+      filtered = filtered.filter(e => e.model.toLowerCase().includes(search));
+    }
+
+    if (options.status) {
+      const eventType = options.status === "success" ? "request.end" : "request.error";
+      filtered = filtered.filter(e => e.eventType === eventType);
+    }
+
+    if (options.minCost !== undefined) {
+      filtered = filtered.filter(e => (e.cost || 0) >= options.minCost!);
+    }
+
+    if (options.minLatency !== undefined) {
+      filtered = filtered.filter(e => (e.duration || 0) >= options.minLatency!);
+    }
+
+    if (options.from) {
+      filtered = filtered.filter(e => new Date(e.time) >= options.from!);
+    }
+
+    if (options.to) {
+      filtered = filtered.filter(e => new Date(e.time) <= options.to!);
+    }
+
+    // Sort by time descending
+    filtered.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    const items: TraceSummary[] = filtered.slice(offset, offset + limit).map(e => ({
       requestId: e.requestId,
       provider: e.provider,
       model: e.model,
@@ -72,10 +126,10 @@ class SimpleLogStore implements MonitoringStore {
       endTime: e.time,
       duration: e.duration,
       cost: e.cost,
-      status: e.eventType === "request.end" ? "success" as const : "error" as const,
+      status: e.eventType === "request.end" ? "success" : "error",
     }));
 
-    return { items, total: completed.length, limit, offset };
+    return { items, total: filtered.length, limit, offset };
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {
@@ -105,8 +159,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(4000, () => {
-  console.log("\n🚀 Custom Adapter Demo running at http://localhost:4000/monitor");
+server.listen(3333, () => {
+  console.log("\n🚀 Custom Adapter Demo running at http://localhost:3333/monitor");
 });
 
 // --- SIMULATION ---

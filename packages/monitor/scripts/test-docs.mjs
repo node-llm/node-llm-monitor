@@ -123,6 +123,15 @@ test("MonitorDashboard.middleware() returns a function", () => {
 });
 
 // =============================================================================
+// README: monitor.api() shorthand
+// =============================================================================
+test("monitor.api() returns middleware function", () => {
+  const monitor = Monitor.memory();
+  const middleware = monitor.api({ basePath: "/monitor" });
+  assert(typeof middleware === "function", "Should return middleware function");
+});
+
+// =============================================================================
 // README: createMonitorMiddleware factory
 // =============================================================================
 test("createMonitorMiddleware() returns middleware function", () => {

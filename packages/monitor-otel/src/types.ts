@@ -5,45 +5,34 @@
  * Users must provide their own @opentelemetry/api and @opentelemetry/sdk-trace-base.
  */
 
+import type {
+  Attributes,
+  AttributeValue as OTelAttributeValue,
+  Context,
+  Span,
+  SpanStatus
+} from "@opentelemetry/api";
+import type { ReadableSpan, SpanProcessor } from "@opentelemetry/sdk-trace-base";
+
 /**
  * Minimal Span interface matching OpenTelemetry ReadableSpan
  */
-export interface OTelReadableSpan {
-  name: string;
-  spanContext(): { traceId: string; spanId: string };
-  parentSpanId?: string;
-  startTime: [number, number]; // [seconds, nanoseconds]
-  endTime: [number, number];
-  status: { code: number; message?: string };
-  attributes: Record<string, AttributeValue>;
-  events: SpanEvent[];
-  kind: number;
-}
-
-export type AttributeValue =
-  | string
-  | number
-  | boolean
-  | string[]
-  | number[]
-  | boolean[]
-  | undefined;
+export type OTelReadableSpan = ReadableSpan;
+export type OTelSpan = Span;
+export type OTelContext = Context;
+export type OTelAttributes = Attributes;
+export type AttributeValue = OTelAttributeValue;
 
 export interface SpanEvent {
   name: string;
   time: [number, number];
-  attributes?: Record<string, AttributeValue>;
+  attributes?: Attributes;
 }
 
 /**
  * SpanProcessor interface matching OpenTelemetry SDK
  */
-export interface OTelSpanProcessor {
-  onStart(span: OTelReadableSpan, parentContext?: unknown): void;
-  onEnd(span: OTelReadableSpan): void;
-  shutdown(): Promise<void>;
-  forceFlush(): Promise<void>;
-}
+export type OTelSpanProcessor = SpanProcessor;
 
 /**
  * Vercel AI SDK span operation types

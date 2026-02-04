@@ -7,6 +7,13 @@ import type {
   TraceFilters
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
+import {
+  filterTraces,
+  sortByTimeDesc,
+  paginate,
+  eventToTraceSummary,
+  extractTokens
+} from "../filterTraces.js";
 
 /**
  * High-performance In-Memory store for development and testing.
@@ -31,6 +38,16 @@ export class MemoryAdapter implements MonitoringStore {
     const requestErrors = filtered.filter((e) => e.eventType === "request.error");
     const totalRequests = requestEnds.length + requestErrors.length;
 
+    // Aggregate token counts
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    for (const event of requestEnds) {
+      const tokens = extractTokens(event);
+      totalPromptTokens += tokens.prompt;
+      totalCompletionTokens += tokens.completion;
+    }
+    const totalTokens = totalPromptTokens + totalCompletionTokens;
+
     return {
       totalRequests,
       totalCost: requestEnds.reduce((sum, e) => sum + (e.cost || 0), 0),
@@ -39,7 +56,10 @@ export class MemoryAdapter implements MonitoringStore {
           ? requestEnds.reduce((sum, e) => sum + (e.duration || 0), 0) /
             Math.max(requestEnds.length, 1)
           : 0,
-      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0
+      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
+      totalPromptTokens,
+      totalCompletionTokens,
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
     };
   }
 
@@ -63,54 +83,8 @@ export class MemoryAdapter implements MonitoringStore {
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
 
-    let filtered = this.events.filter(
-      (e) => e.eventType === "request.end" || e.eventType === "request.error"
-    );
-
-    if (options.requestId) {
-      filtered = filtered.filter((e) => e.requestId === options.requestId);
-    }
-    if (options.model) {
-      filtered = filtered.filter((e) => e.model === options.model);
-    }
-    if (options.provider) {
-      filtered = filtered.filter((e) => e.provider === options.provider);
-    }
-    if (options.minCost !== undefined) {
-      filtered = filtered.filter((e) => (e.cost || 0) >= options.minCost!);
-    }
-    if (options.minLatency !== undefined) {
-      filtered = filtered.filter((e) => (e.duration || 0) >= options.minLatency!);
-    }
-    if (options.status === "success") {
-      filtered = filtered.filter((e) => e.eventType === "request.end");
-    } else if (options.status === "error") {
-      filtered = filtered.filter((e) => e.eventType === "request.error");
-    }
-    if (options.from) {
-      filtered = filtered.filter((e) => new Date(e.time) >= options.from!);
-    }
-    if (options.to) {
-      filtered = filtered.filter((e) => new Date(e.time) <= options.to!);
-    }
-
-    filtered.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-
-    const items = filtered.slice(offset, offset + limit).map(
-      (e) =>
-        ({
-          requestId: e.requestId,
-          provider: e.provider,
-          model: e.model,
-          startTime: new Date(new Date(e.time).getTime() - (e.duration || 0)),
-          endTime: e.time,
-          duration: e.duration,
-          cost: e.cost,
-          cpuTime: e.cpuTime,
-          allocations: e.allocations,
-          status: e.eventType === "request.end" ? ("success" as const) : ("error" as const)
-        }) as any
-    );
+    const filtered = sortByTimeDesc(filterTraces(this.events, options));
+    const items = paginate(filtered, limit, offset).map(eventToTraceSummary);
 
     return { items, total: filtered.length, limit, offset };
   }

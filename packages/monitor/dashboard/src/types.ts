@@ -2,12 +2,12 @@
 // These mirror the types in src/types.ts
 
 export type EventType =
-  | 'request.start'
-  | 'request.end'
-  | 'request.error'
-  | 'tool.start'
-  | 'tool.end'
-  | 'tool.error';
+  | "request.start"
+  | "request.end"
+  | "request.error"
+  | "tool.start"
+  | "tool.end"
+  | "tool.error";
 
 export interface MonitoringEvent {
   id: string;
@@ -32,6 +32,10 @@ export interface MonitoringStats {
   totalCost: number;
   avgDuration: number;
   errorRate: number;
+  // Token analytics
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  avgTokensPerRequest: number;
 }
 
 export interface ProviderStats {
@@ -41,6 +45,10 @@ export interface ProviderStats {
   cost: number;
   avgDuration: number;
   errorCount: number;
+  // Token analytics
+  promptTokens: number;
+  completionTokens: number;
+  costPer1kTokens: number;
 }
 
 export interface TimeSeriesPoint {
@@ -56,6 +64,9 @@ export interface MetricsData {
     cost: TimeSeriesPoint[];
     duration: TimeSeriesPoint[];
     errors: TimeSeriesPoint[];
+    // Token analytics
+    promptTokens: TimeSeriesPoint[];
+    completionTokens: TimeSeriesPoint[];
   };
 }
 
@@ -69,7 +80,10 @@ export interface TraceSummary {
   cost?: number;
   cpuTime?: number;
   allocations?: number;
-  status: 'success' | 'error' | 'running';
+  status: "success" | "error" | "running";
+  // Token analytics
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 export interface PaginatedTraces {
@@ -79,11 +93,12 @@ export interface PaginatedTraces {
   offset: number;
 }
 
-export type TimeRange = '1h' | '24h' | '7d' | '30d' | 'custom';
+export type TimeRange = "1h" | "24h" | "7d" | "30d" | "custom";
 
 export interface TraceFilters {
   requestId?: string;
-  status?: 'success' | 'error';
+  query?: string;
+  status?: "success" | "error";
   model?: string;
   provider?: string;
   minCost?: number;

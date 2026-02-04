@@ -12,6 +12,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Monitor } from "@node-llm/monitor";
 import { randomUUID } from "crypto";
+import "dotenv/config";
 
 async function main() {
   // 1. Initialize Monitor

@@ -119,7 +119,10 @@ describe("PrismaAdapter", () => {
         totalRequests: 100,
         totalCost: 5.5,
         avgDuration: 250,
-        errorRate: 10
+        errorRate: 10,
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        avgTokensPerRequest: 0
       });
     });
 
@@ -191,7 +194,10 @@ describe("PrismaAdapter", () => {
         totalRequests: 2,
         totalCost: 0.03,
         avgDuration: 150,
-        errorRate: 0
+        errorRate: 0,
+        totalPromptTokens: 0,
+        totalCompletionTokens: 0,
+        avgTokensPerRequest: 0
       });
 
       expect(result.byProvider).toHaveLength(2);
@@ -296,9 +302,9 @@ describe("PrismaAdapter", () => {
       expect(mockPrisma.monitoring_events.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            requestId: "req-1",
-            model: "gpt-4",
-            provider: "openai",
+            requestId: { contains: "req-1", mode: "insensitive" },
+            model: { contains: "gpt-4", mode: "insensitive" },
+            provider: { contains: "openai", mode: "insensitive" },
             eventType: "request.error",
             cost: { gte: 0.5 },
             duration: { gte: 1000 },

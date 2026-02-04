@@ -10,14 +10,14 @@ export interface MonitoringEvent {
   id: string;
   eventType: string;
   requestId: string;
-  sessionId?: string;
-  transactionId?: string;
+  sessionId?: string | undefined;
+  transactionId?: string | undefined;
   time: Date;
-  duration?: number;
-  cost?: number;
-  cpuTime?: number;
-  gcTime?: number;
-  allocations?: number;
+  duration?: number | undefined;
+  cost?: number | undefined;
+  cpuTime?: number | undefined;
+  gcTime?: number | undefined;
+  allocations?: number | undefined;
   payload: Record<string, any>;
   createdAt: Date;
   provider: string;
@@ -29,6 +29,10 @@ export interface MonitoringStats {
   totalCost: number;
   avgDuration: number;
   errorRate: number;
+  // Token analytics
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  avgTokensPerRequest: number;
 }
 
 export interface ProviderStats {
@@ -38,6 +42,10 @@ export interface ProviderStats {
   cost: number;
   avgDuration: number;
   errorCount: number;
+  // Token analytics
+  promptTokens: number;
+  completionTokens: number;
+  costPer1kTokens: number;
 }
 
 export interface TimeSeriesPoint {
@@ -53,6 +61,9 @@ export interface MetricsData {
     cost: TimeSeriesPoint[];
     duration: TimeSeriesPoint[];
     errors: TimeSeriesPoint[];
+    // Token analytics
+    promptTokens: TimeSeriesPoint[];
+    completionTokens: TimeSeriesPoint[];
   };
 }
 
@@ -67,6 +78,9 @@ export interface TraceSummary {
   cpuTime?: number;
   allocations?: number;
   status: "success" | "error" | "running";
+  // Token analytics
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 export interface PaginatedTraces {
@@ -78,6 +92,7 @@ export interface PaginatedTraces {
 
 export interface TraceFilters {
   requestId?: string;
+  query?: string;
   status?: "success" | "error";
   model?: string;
   provider?: string;

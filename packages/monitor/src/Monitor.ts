@@ -57,6 +57,22 @@ export class Monitor {
   }
 
   /**
+   * Returns the underlying monitoring store
+   */
+  public getStore(): MonitoringStore {
+    return this.store;
+  }
+
+  /**
+   * Returns a dashboard middleware for the given options
+   */
+  public api(options?: import("./ui/index.js").MonitorDashboardOptions) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createMonitorMiddleware } = require("./ui/index.js");
+    return createMonitorMiddleware(this.getStore(), options);
+  }
+
+  /**
    * Scrub content if scrubber is configured
    */
   private scrubContent<T>(content: T): T {

@@ -28,8 +28,10 @@ import { randomUUID } from "node:crypto";
 import type { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
 import type {
   OTelReadableSpan,
+  OTelSpan,
+  OTelContext,
   OTelSpanProcessor,
-  NodeLLMSpanProcessorOptions,
+  NodeLLMSpanProcessorOptions
 } from "./types.js";
 import {
   isAISpan,
@@ -43,7 +45,7 @@ import {
   mapStatusToEventType,
   generateRequestId,
   extractSessionId,
-  parseJsonAttribute,
+  parseJsonAttribute
 } from "./utils.js";
 import { estimateCost } from "@node-llm/monitor";
 
@@ -58,9 +60,7 @@ import { estimateCost } from "@node-llm/monitor";
  */
 export class NodeLLMSpanProcessor implements OTelSpanProcessor {
   private readonly store: MonitoringStore;
-  private readonly options: Required<
-    Pick<NodeLLMSpanProcessorOptions, "captureContent">
-  > &
+  private readonly options: Required<Pick<NodeLLMSpanProcessorOptions, "captureContent">> &
     NodeLLMSpanProcessorOptions;
   private pendingWrites: Promise<void>[] = [];
 
@@ -68,7 +68,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
     this.store = store;
     this.options = {
       captureContent: true,
-      ...options,
+      ...options
     };
   }
 
@@ -76,7 +76,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
    * Called when a span starts. We don't need to do anything here
    * since we process spans on completion.
    */
-  onStart(_span: OTelReadableSpan, _parentContext?: unknown): void {
+  onStart(_span: OTelSpan, _parentContext: OTelContext): void {
     // No-op: We process spans when they end
   }
 
@@ -119,9 +119,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
     const event = this.spanToEvent(span);
 
     // Apply custom transform if provided
-    const finalEvent = this.options.transform
-      ? this.options.transform(event, span)
-      : event;
+    const finalEvent = this.options.transform ? this.options.transform(event, span) : event;
 
     await this.store.saveEvent(finalEvent);
   }
@@ -161,15 +159,15 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       usage: {
         promptTokens,
         completionTokens,
-        totalTokens: promptTokens + completionTokens,
+        totalTokens: promptTokens + completionTokens
       },
       // Streaming metrics
       ...(attrs.msToFirstChunk !== undefined && {
-        msToFirstChunk: attrs.msToFirstChunk,
+        msToFirstChunk: attrs.msToFirstChunk
       }),
       ...(attrs.msToFinish !== undefined && { msToFinish: attrs.msToFinish }),
       ...(attrs.avgCompletionTokensPerSecond !== undefined && {
-        avgCompletionTokensPerSecond: attrs.avgCompletionTokensPerSecond,
+        avgCompletionTokensPerSecond: attrs.avgCompletionTokensPerSecond
       }),
       // Custom metadata
       ...(attrs.metadata && { metadata: attrs.metadata }),
@@ -177,8 +175,8 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       otel: {
         traceId: span.spanContext().traceId,
         spanId: span.spanContext().spanId,
-        parentSpanId: span.parentSpanId,
-      },
+        parentSpanId: span.parentSpanId
+      }
     };
 
     // Add content if enabled
@@ -207,8 +205,8 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
         id: attrs.toolCallId,
         ...(this.options.captureContent && {
           args: parseJsonAttribute(attrs.toolCallArgs),
-          result: parseJsonAttribute(attrs.toolCallResult),
-        }),
+          result: parseJsonAttribute(attrs.toolCallResult)
+        })
       };
     }
 
@@ -228,7 +226,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       payload,
       createdAt: new Date(),
       provider,
-      model,
+      model
     };
   }
 

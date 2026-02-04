@@ -6,10 +6,12 @@ import {
   TraceDetail, 
   MetricsChart, 
   ProviderTable,
-  TimeRangeFilter 
+  TimeRangeFilter,
+  DebouncedInput,
+  TokenAnalytics
 } from '../components';
 
-type View = 'metrics' | 'traces';
+type View = 'metrics' | 'tokens' | 'traces';
 
 export function Dashboard() {
   const [view, setView] = useState<View>('metrics');
@@ -45,6 +47,16 @@ export function Dashboard() {
             }`}
           >
             📊 Metrics
+          </button>
+          <button
+            onClick={() => setView('tokens')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              view === 'tokens'
+                ? 'bg-monitor-accent text-white'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            🎯 Tokens
           </button>
           <button
             onClick={() => setView('traces')}
@@ -101,7 +113,7 @@ export function Dashboard() {
           color="default"
         />
         <StatCard
-          label="Total Cost"
+          label="Est. Cost"
           value={`$${(stats?.totalCost ?? 0).toFixed(4)}`}
           icon="💰"
           color="warning"
@@ -158,6 +170,12 @@ export function Dashboard() {
             />
           </div>
         </>
+      ) : view === 'tokens' ? (
+        /* Token Analytics View */
+        <TokenAnalytics 
+          metrics={metrics} 
+          loading={loading && !metrics} 
+        />
       ) : (
         /* Traces View */
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -166,12 +184,11 @@ export function Dashboard() {
             {/* Filter Bar */}
             <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-4 rounded-xl space-y-3">
               <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Search Request ID..."
+                <DebouncedInput
+                  placeholder="Search (ID, Model, Provider)..."
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
-                  value={filters.requestId || ''}
-                  onChange={(e) => setFilters({ ...filters, requestId: e.target.value || undefined })}
+                  value={filters.query || ''}
+                  onChange={(value) => setFilters({ ...filters, query: value || undefined })}
                 />
                 <select
                   className="px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
@@ -184,19 +201,17 @@ export function Dashboard() {
                 </select>
               </div>
               <div className="flex gap-3">
-                <input
-                  type="text"
+                <DebouncedInput
                   placeholder="Provider (e.g. openai)..."
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
                   value={filters.provider || ''}
-                  onChange={(e) => setFilters({ ...filters, provider: e.target.value || undefined })}
+                  onChange={(value) => setFilters({ ...filters, provider: value || undefined })}
                 />
-                <input
-                  type="text"
+                <DebouncedInput
                   placeholder="Model (e.g. gpt-4)..."
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
                   value={filters.model || ''}
-                  onChange={(e) => setFilters({ ...filters, model: e.target.value || undefined })}
+                  onChange={(value) => setFilters({ ...filters, model: value || undefined })}
                 />
               </div>
             </div>

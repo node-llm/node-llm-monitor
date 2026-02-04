@@ -6,13 +6,13 @@ This guide shows how to use enhanced metadata with NodeLLM's actual request flow
 
 ```typescript
 import { createLLM, type Message } from '@node-llm/core';
-import { Monitor, PrismaAdapter } from '@node-llm/monitor';
+import { createPrismaMonitor } from '@node-llm/monitor';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const monitor = new Monitor({
-  store: new PrismaAdapter(prisma),
+// Use the factory function - recommended approach
+const monitor = createPrismaMonitor(prisma, {
   captureContent: false, // PII protection (default)
 });
 
@@ -30,8 +30,11 @@ const llm = createLLM({
 Create a wrapper that enriches metadata and passes it via the `sessionId` or custom options that the Monitor middleware reads from context:
 
 ```typescript
-import { Monitor } from '@node-llm/monitor';
-import { PrismaAdapter } from '@node-llm/monitor/adapters/prisma';
+import { createPrismaMonitor } from '@node-llm/monitor';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+const monitor = createPrismaMonitor(prisma);
 
 // The Monitor middleware automatically captures metadata from ctx.state
 // You can extend the context state before/after requests
@@ -88,7 +91,10 @@ Set metadata once at service initialization:
 
 ```typescript
 import { createLLM, type Message } from '@node-llm/core';
-import { Monitor, PrismaAdapter } from '@node-llm/monitor';
+import { createPrismaMonitor, Monitor } from '@node-llm/monitor';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 interface ServiceConfig {
   provider: string;
@@ -113,9 +119,8 @@ class LLMService {
   };
   
   constructor(config: ServiceConfig) {
-    this.monitor = new Monitor({
-      store: new PrismaAdapter(prisma),
-    });
+    // Use the factory function - recommended approach
+    this.monitor = createPrismaMonitor(prisma);
     
     this.llm = createLLM({
       provider: config.provider,

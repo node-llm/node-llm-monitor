@@ -4,6 +4,8 @@ Advanced, infrastructure-first monitoring for NodeLLM.
 
 ![Dashboard Metrics View](docs/images/dashboard-metrics.png)
 
+![Token Analytics](docs/images/dashboard-tokens.png)
+
 ![Dashboard Traces View](docs/images/dashboard-traces.png)
 
 ## Features
@@ -142,14 +144,17 @@ import { MonitorDashboard } from "@node-llm/monitor/ui";
 const prisma = new PrismaClient();
 const app = express();
 
-// Create dashboard - pass Prisma client directly (auto-wrapped in adapter)
-const dashboard = new MonitorDashboard(prisma, {
-  basePath: "/monitor",
-  cors: false // Recommended: same-origin only for security
-});
-
+// Create dashboard - pass Prisma client or any MonitoringStore
 // Dashboard handles its own routing under basePath
-app.use(dashboard.middleware());
+app.use(
+  createMonitorMiddleware(prisma, {
+    basePath: "/monitor",
+    cors: false
+  })
+);
+
+// OR use the ergonomic shorthand from a monitor instance:
+app.use(monitor.api({ basePath: "/monitor" }));
 
 app.listen(3000, () => {
   console.log("Dashboard available at http://localhost:3000/monitor");
@@ -219,6 +224,22 @@ await monitor.onResponse(ctx, {
   usage: { input_tokens: 100, output_tokens: 50, cost: 0.002 }
 });
 ```
+
+## OpenTelemetry Support
+
+For zero-code instrumentation of libraries like Vercel AI SDK, use our OpenTelemetry bridge:
+
+```ts
+import { NodeLLMSpanProcessor } from "@node-llm/monitor-otel";
+import { Monitor } from "@node-llm/monitor";
+
+const monitor = Monitor.memory();
+const provider = new NodeTracerProvider();
+provider.addSpanProcessor(new NodeLLMSpanProcessor(monitor.getStore()));
+provider.register();
+```
+
+See [`@node-llm/monitor-otel`](../monitor-otel) for more details.
 
 ## Privacy
 

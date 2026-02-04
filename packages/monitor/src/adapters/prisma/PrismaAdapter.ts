@@ -9,6 +9,129 @@ import type {
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 
+/**
+ * Builds Prisma WHERE clause from trace filters.
+ * Keeps filtering logic centralized and easier to maintain.
+ */
+function buildPrismaWhereClause(options: TraceFilters): Record<string, any> {
+  const where: Record<string, any> = {
+    eventType: { in: ["request.end", "request.error"] }
+  };
+
+  // Text search filters - case-insensitive partial matching
+  if (options.requestId) {
+    where.requestId = { contains: options.requestId, mode: "insensitive" };
+  }
+
+  if (options.query) {
+    where.OR = [
+      { requestId: { contains: options.query, mode: "insensitive" } },
+      { model: { contains: options.query, mode: "insensitive" } },
+      { provider: { contains: options.query, mode: "insensitive" } }
+    ];
+  }
+
+  if (options.model) {
+    where.model = { contains: options.model, mode: "insensitive" };
+  }
+
+  if (options.provider) {
+    where.provider = { contains: options.provider, mode: "insensitive" };
+  }
+
+  // Status filter - overrides eventType
+  if (options.status) {
+    where.eventType = options.status.toLowerCase() === "success" ? "request.end" : "request.error";
+  }
+
+  // Numeric threshold filters
+  if (options.minCost !== undefined) {
+    where.cost = { gte: options.minCost };
+  }
+
+  if (options.minLatency !== undefined) {
+    where.duration = { gte: options.minLatency };
+  }
+
+  // Date range filters
+  if (options.from || options.to) {
+    where.time = {};
+    if (options.from) where.time.gte = options.from;
+    if (options.to) where.time.lte = options.to;
+  }
+
+  return where;
+}
+
+/**
+ * Converts a Prisma event record to a TraceSummary.
+ */
+function prismaEventToTraceSummary(event: any): TraceSummary {
+  const tokens = extractTokensFromPayload(event.payload);
+  const summary: TraceSummary = {
+    requestId: event.requestId,
+    provider: event.provider,
+    model: event.model,
+    startTime: new Date(event.time.getTime() - (event.duration || 0)),
+    endTime: event.time,
+    duration: event.duration,
+    cost: event.cost,
+    cpuTime: event.cpuTime,
+    allocations: event.allocations,
+    status: event.eventType === "request.end" ? "success" : "error"
+  };
+
+  // Only set token properties if they have values
+  if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
+  if (tokens.completion > 0) summary.completionTokens = tokens.completion;
+
+  return summary;
+}
+
+/**
+ * Extract token counts from event payload.
+ */
+function extractTokensFromPayload(payload: any): { prompt: number; completion: number } {
+  if (!payload) return { prompt: 0, completion: 0 };
+
+  if (payload.usage) {
+    return {
+      // Support multiple naming conventions:
+      // - Vercel AI SDK: promptTokens/completionTokens
+      // - OpenAI snake_case: prompt_tokens/completion_tokens
+      // - Anthropic/industry: input_tokens/output_tokens
+      // - NodeLLM camelCase: inputTokens/outputTokens
+      prompt:
+        payload.usage.promptTokens ||
+        payload.usage.prompt_tokens ||
+        payload.usage.inputTokens ||
+        payload.usage.input_tokens ||
+        0,
+      completion:
+        payload.usage.completionTokens ||
+        payload.usage.completion_tokens ||
+        payload.usage.outputTokens ||
+        payload.usage.output_tokens ||
+        0
+    };
+  }
+
+  return {
+    prompt:
+      payload.promptTokens ||
+      payload.prompt_tokens ||
+      payload.inputTokens ||
+      payload.input_tokens ||
+      0,
+    completion:
+      payload.completionTokens ||
+      payload.completion_tokens ||
+      payload.outputTokens ||
+      payload.output_tokens ||
+      0
+  };
+}
+
 export class PrismaAdapter implements MonitoringStore {
   private validated = false;
 
@@ -70,20 +193,39 @@ export class PrismaAdapter implements MonitoringStore {
 
     const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
-    const [totalRequests, totalCostData, avgDurationData, errorCount] = await Promise.all([
-      this.model.count({
-        where: { ...where, eventType: { in: ["request.end", "request.error"] } }
-      }),
-      this.model.aggregate({ where, _sum: { cost: true } }),
-      this.model.aggregate({ where, _avg: { duration: true } }),
-      this.model.count({ where: { ...where, eventType: "request.error" } })
-    ]);
+    // Fetch events to calculate token counts (stored in JSON payload)
+    const [totalRequests, totalCostData, avgDurationData, errorCount, successEvents] =
+      await Promise.all([
+        this.model.count({
+          where: { ...where, eventType: { in: ["request.end", "request.error"] } }
+        }),
+        this.model.aggregate({ where, _sum: { cost: true } }),
+        this.model.aggregate({ where, _avg: { duration: true } }),
+        this.model.count({ where: { ...where, eventType: "request.error" } }),
+        this.model.findMany({
+          where: { ...where, eventType: "request.end" },
+          select: { payload: true }
+        })
+      ]);
+
+    // Aggregate token counts from payload
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    for (const event of successEvents) {
+      const tokens = extractTokensFromPayload(event.payload);
+      totalPromptTokens += tokens.prompt;
+      totalCompletionTokens += tokens.completion;
+    }
+    const totalTokens = totalPromptTokens + totalCompletionTokens;
 
     return {
       totalRequests,
       totalCost: totalCostData._sum.cost || 0,
       avgDuration: avgDurationData._avg.duration || 0,
-      errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0
+      errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0,
+      totalPromptTokens,
+      totalCompletionTokens,
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
     };
   }
 
@@ -123,29 +265,7 @@ export class PrismaAdapter implements MonitoringStore {
     this.ensureValidated();
     const limit = options.limit ?? 50;
     const offset = options.offset ?? 0;
-
-    const where: any = {
-      eventType: { in: ["request.end", "request.error"] }
-    };
-
-    if (options.status === "success") {
-      where.eventType = "request.end";
-    } else if (options.status === "error") {
-      where.eventType = "request.error";
-    }
-
-    if (options.requestId) where.requestId = options.requestId;
-    if (options.model) where.model = options.model;
-    if (options.provider) where.provider = options.provider;
-
-    if (options.minCost !== undefined) where.cost = { gte: options.minCost };
-    if (options.minLatency !== undefined) where.duration = { gte: options.minLatency };
-
-    if (options.from || options.to) {
-      where.time = {};
-      if (options.from) where.time.gte = options.from;
-      if (options.to) where.time.lte = options.to;
-    }
+    const where = buildPrismaWhereClause(options);
 
     const [items, total] = await Promise.all([
       this.model.findMany({
@@ -157,20 +277,12 @@ export class PrismaAdapter implements MonitoringStore {
       this.model.count({ where })
     ]);
 
-    const summaries: TraceSummary[] = items.map((e: any) => ({
-      requestId: e.requestId,
-      provider: e.provider,
-      model: e.model,
-      startTime: new Date(e.time.getTime() - (e.duration || 0)),
-      endTime: e.time,
-      duration: e.duration,
-      cost: e.cost,
-      cpuTime: e.cpuTime,
-      allocations: e.allocations,
-      status: e.eventType === "request.end" ? "success" : "error"
-    }));
-
-    return { items: summaries, total, limit, offset };
+    return {
+      items: items.map(prismaEventToTraceSummary),
+      total,
+      limit,
+      offset
+    };
   }
 
   /**

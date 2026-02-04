@@ -93,6 +93,8 @@ Track the pulse of your AI infrastructure:
 - **Cost**: Automatic token counting and USD cost calculation for major providers.
 - **Performance**: Latency tracking, Time-to-First-Token (TTFT), and tokens/sec.
 
+![Token Analytics Dashboard](docs/images/dashboard-tokens.png)
+
 ### 🔍 Deep Tracing
 
 Inspect the full lifecycle of every AI request:

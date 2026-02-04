@@ -4,6 +4,8 @@ Advanced, infrastructure-first monitoring for NodeLLM.
 
 ![Dashboard Metrics View](docs/images/dashboard-metrics.png)
 
+![Token Analytics](docs/images/dashboard-tokens.png)
+
 ![Dashboard Traces View](docs/images/dashboard-traces.png)
 
 ## Features

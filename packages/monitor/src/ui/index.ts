@@ -56,6 +56,8 @@ export interface MonitorDashboardOptions {
   cors?: CorsConfig;
   /** Polling interval in milliseconds for the fallback UI. Default: 5000 */
   pollInterval?: number;
+  /** Enable debug logging. Default: false */
+  debug?: boolean;
 }
 
 export class MonitorDashboard {
@@ -65,6 +67,7 @@ export class MonitorDashboard {
   private readonly staticDir: string;
   private readonly cors: CorsConfig;
   private readonly pollInterval: number;
+  private readonly debug: boolean;
 
   constructor(storeOrPrisma: MonitoringStore | any, options: MonitorDashboardOptions = {}) {
     // Seamless integration: if its not a store but has prisma-like properties, wrap it
@@ -80,6 +83,7 @@ export class MonitorDashboard {
 
     this.basePath = options.basePath ?? "/monitor";
     this.apiBase = `${this.basePath}/api`;
+    this.debug = options.debug ?? false;
 
     // Lazy resolve static directory with fallback for environments like Next.js Server Actions
     let currentDir = "";
@@ -201,7 +205,9 @@ export class MonitorDashboard {
         const minLatency = url.searchParams.get("minLatency");
         if (minLatency) options.minLatency = parseInt(minLatency);
 
-        console.log(`[MonitorDashboard] Fetching traces with filters:`, options);
+        if (this.debug) {
+          console.log(`[MonitorDashboard] Fetching traces with filters:`, options);
+        }
         const traces = await this.store.listTraces(options);
         this.sendJson(res, traces, req);
       } catch (error) {

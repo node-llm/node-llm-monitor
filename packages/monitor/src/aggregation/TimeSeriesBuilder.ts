@@ -13,14 +13,17 @@ function extractTokens(event: MonitoringEvent): { prompt: number; completion: nu
       // - Vercel AI SDK: promptTokens/completionTokens
       // - OpenAI snake_case: prompt_tokens/completion_tokens
       // - Anthropic/industry: input_tokens/output_tokens
+      // - NodeLLM camelCase: inputTokens/outputTokens
       prompt:
         payload.usage.promptTokens ||
         payload.usage.prompt_tokens ||
+        payload.usage.inputTokens ||
         payload.usage.input_tokens ||
         0,
       completion:
         payload.usage.completionTokens ||
         payload.usage.completion_tokens ||
+        payload.usage.outputTokens ||
         payload.usage.output_tokens ||
         0
     };
@@ -28,8 +31,18 @@ function extractTokens(event: MonitoringEvent): { prompt: number; completion: nu
 
   // Direct fields (some providers)
   return {
-    prompt: payload.promptTokens || payload.prompt_tokens || payload.input_tokens || 0,
-    completion: payload.completionTokens || payload.completion_tokens || payload.output_tokens || 0
+    prompt:
+      payload.promptTokens ||
+      payload.prompt_tokens ||
+      payload.inputTokens ||
+      payload.input_tokens ||
+      0,
+    completion:
+      payload.completionTokens ||
+      payload.completion_tokens ||
+      payload.outputTokens ||
+      payload.output_tokens ||
+      0
   };
 }
 

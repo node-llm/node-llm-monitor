@@ -6,7 +6,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://node-llm.eshaiju.com",
+  "homepage": "https://nodellm.dev",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

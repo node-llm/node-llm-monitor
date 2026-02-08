@@ -57,4 +57,4 @@ For the [`demo`](./demo) example, once running, simply click the link below or p
 
 ---
 
-For more details, visit the [main documentation](https://node-llm.eshaiju.com/monitor).
+For more details, visit the [main documentation](https://nodellm.dev/monitor).

@@ -10,6 +10,16 @@ import {
   DebouncedInput,
   TokenAnalytics
 } from '../components';
+import {
+  IconBarChart,
+  IconDollar,
+  IconClock,
+  IconAlertTriangle,
+  IconSparkle,
+  IconRefresh,
+  IconTarget,
+  IconSearch,
+} from '../components/Icons';
 
 type View = 'metrics' | 'tokens' | 'traces';
 
@@ -40,33 +50,33 @@ export function Dashboard() {
         <div className="flex gap-2">
           <button
             onClick={() => setView('metrics')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
               view === 'metrics'
                 ? 'bg-monitor-accent text-white'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            📊 Metrics
+            <IconBarChart className="w-4 h-4" /> Metrics
           </button>
           <button
             onClick={() => setView('tokens')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
               view === 'tokens'
                 ? 'bg-monitor-accent text-white'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            🎯 Tokens
+            <IconTarget className="w-4 h-4" /> Tokens
           </button>
           <button
             onClick={() => setView('traces')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
               view === 'traces'
                 ? 'bg-monitor-accent text-white'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            🔍 Traces
+            <IconSearch className="w-4 h-4" /> Traces
           </button>
         </div>
         
@@ -82,7 +92,7 @@ export function Dashboard() {
             }`}
             title={autoRefresh ? 'Auto-refresh enabled (5s)' : 'Auto-refresh disabled'}
           >
-            <span className={autoRefresh ? 'animate-pulse' : ''}>🔄</span>
+            <IconRefresh className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} style={autoRefresh ? { animationDuration: '3s' } : undefined} />
             <span className="hidden sm:inline">{autoRefresh ? 'Auto' : 'Manual'}</span>
           </button>
         </div>
@@ -92,7 +102,7 @@ export function Dashboard() {
       {error && (
         <div className="glass rounded-xl border border-red-500/20 bg-red-500/10 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-red-400">⚠️</span>
+            <IconAlertTriangle className="w-4 h-4 text-red-400" />
             <p className="text-sm text-red-300">{error.message}</p>
           </div>
           <button 
@@ -109,31 +119,31 @@ export function Dashboard() {
         <StatCard
           label="Total Requests"
           value={stats?.totalRequests ?? 0}
-          icon="📊"
+          icon={<IconBarChart />}
           color="default"
         />
         <StatCard
           label="Est. Cost"
           value={`$${(stats?.totalCost ?? 0).toFixed(4)}`}
-          icon="💰"
+          icon={<IconDollar />}
           color="warning"
         />
         <StatCard
           label="Avg Response Time"
           value={`${(stats?.avgDuration ?? 0).toFixed(0)}ms`}
-          icon="⏱"
+          icon={<IconClock />}
           color="default"
         />
         <StatCard
           label="Error Rate"
           value={`${(stats?.errorRate ?? 0).toFixed(1)}%`}
-          icon="⚠️"
+          icon={<IconAlertTriangle />}
           color={stats && stats.errorRate > 5 ? 'error' : 'success'}
         />
         <StatCard
           label="Self-Corrections"
           value={stats?.totalSelfCorrections ?? 0}
-          icon="✨"
+          icon={<IconSparkle />}
           color="default"
         />
       </div>
@@ -254,7 +264,7 @@ export function Dashboard() {
             </>
           ) : (
             <>
-              <span>🔄</span>
+              <IconRefresh />
               Refresh
             </>
           )}

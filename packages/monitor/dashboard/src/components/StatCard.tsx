@@ -1,7 +1,9 @@
+import { ReactNode } from 'react';
+
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon: string;
+  icon: ReactNode;
   color?: 'default' | 'success' | 'error' | 'warning';
   change?: {
     value: number;
@@ -16,12 +18,19 @@ const colorMap = {
   warning: 'text-yellow-600',
 };
 
+const iconColorMap = {
+  default: 'text-gray-400',
+  success: 'text-green-500',
+  error: 'text-red-500',
+  warning: 'text-yellow-500',
+};
+
 export function StatCard({ label, value, icon, color = 'default', change }: StatCardProps) {
   return (
     <div className="glass p-5 rounded-2xl glow hover:border-monitor-accent/30 transition-all border border-monitor-border animate-fade-in">
       <div className="flex justify-between items-start mb-3">
         <span className="text-gray-600 text-xs font-medium uppercase tracking-wider">{label}</span>
-        <span className="text-xl">{icon}</span>
+        <span className={iconColorMap[color]}>{icon}</span>
       </div>
       
       <div className={`text-2xl font-semibold ${colorMap[color]}`}>

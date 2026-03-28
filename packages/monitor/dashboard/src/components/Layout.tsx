@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { IconLogo } from './Icons';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,7 +13,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">📊</span>
+              <IconLogo />
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">NodeLLM Monitor</h1>
                 <p className="text-xs text-gray-600">Real-time LLM Observability</p>

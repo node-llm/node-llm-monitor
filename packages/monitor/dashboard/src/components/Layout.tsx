@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
               </div>
               
               <a 
-                href="https://github.com/nodellm/monitor" 
+                href="https://github.com/node-llm/node-llm-monitor" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-gray-900 transition-colors"

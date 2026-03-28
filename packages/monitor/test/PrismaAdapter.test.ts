@@ -82,7 +82,8 @@ describe("PrismaAdapter", () => {
           payload: event.payload,
           createdAt: event.createdAt,
           provider: event.provider,
-          model: event.model
+          model: event.model,
+          correctionRounds: event.correctionRounds
         }
       });
     });
@@ -122,7 +123,8 @@ describe("PrismaAdapter", () => {
         errorRate: 10,
         totalPromptTokens: 0,
         totalCompletionTokens: 0,
-        avgTokensPerRequest: 0
+        avgTokensPerRequest: 0,
+        totalSelfCorrections: 0
       });
     });
 
@@ -197,7 +199,8 @@ describe("PrismaAdapter", () => {
         errorRate: 0,
         totalPromptTokens: 0,
         totalCompletionTokens: 0,
-        avgTokensPerRequest: 0
+        avgTokensPerRequest: 0,
+        totalSelfCorrections: 0
       });
 
       expect(result.byProvider).toHaveLength(2);

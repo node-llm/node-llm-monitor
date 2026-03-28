@@ -78,7 +78,8 @@ function prismaEventToTraceSummary(event: any): TraceSummary {
     cost: event.cost,
     cpuTime: event.cpuTime,
     allocations: event.allocations,
-    status: event.eventType === "request.end" ? "success" : "error"
+    status: event.eventType === "request.end" ? "success" : "error",
+    correctionRounds: event.correctionRounds
   };
 
   // Only set token properties if they have values
@@ -172,7 +173,8 @@ export class PrismaAdapter implements MonitoringStore {
         payload: event.payload,
         createdAt: event.createdAt,
         provider: event.provider,
-        model: event.model
+        model: event.model,
+        correctionRounds: event.correctionRounds
       }
     });
   }
@@ -194,19 +196,30 @@ export class PrismaAdapter implements MonitoringStore {
     const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
 
     // Fetch events to calculate token counts (stored in JSON payload)
-    const [totalRequests, totalCostData, avgDurationData, errorCount, successEvents] =
-      await Promise.all([
-        this.model.count({
-          where: { ...where, eventType: { in: ["request.end", "request.error"] } }
-        }),
-        this.model.aggregate({ where, _sum: { cost: true } }),
-        this.model.aggregate({ where, _avg: { duration: true } }),
-        this.model.count({ where: { ...where, eventType: "request.error" } }),
-        this.model.findMany({
-          where: { ...where, eventType: "request.end" },
-          select: { payload: true }
+    const [
+      totalRequests,
+      totalCostData,
+      avgDurationData,
+      errorCount,
+      successEvents,
+      totalSelfCorrections
+    ] = await Promise.all([
+      this.model.count({
+        where: { ...where, eventType: { in: ["request.end", "request.error"] } }
+      }),
+      this.model.aggregate({ where, _sum: { cost: true } }),
+      this.model.aggregate({ where, _avg: { duration: true } }),
+      this.model.count({ where: { ...where, eventType: "request.error" } }),
+      this.model.findMany({
+        where: { ...where, eventType: "request.end" },
+        select: { payload: true }
+      }),
+      this.model
+        .count({
+          where: { ...where, eventType: "request.end", correctionRounds: { gt: 0 } }
         })
-      ]);
+        .catch(() => 0) // Graceful degradation if column doesn't exist yet
+    ]);
 
     // Aggregate token counts from payload
     let totalPromptTokens = 0;
@@ -225,7 +238,8 @@ export class PrismaAdapter implements MonitoringStore {
       errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0,
       totalPromptTokens,
       totalCompletionTokens,
-      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
+      totalSelfCorrections
     };
   }
 

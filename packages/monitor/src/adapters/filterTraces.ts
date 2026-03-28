@@ -179,6 +179,7 @@ export function eventToTraceSummary(event: MonitoringEvent): TraceSummary {
   if (event.allocations !== undefined) summary.allocations = event.allocations;
   if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
   if (tokens.completion > 0) summary.completionTokens = tokens.completion;
+  if (event.correctionRounds !== undefined) summary.correctionRounds = event.correctionRounds;
 
   return summary;
 }

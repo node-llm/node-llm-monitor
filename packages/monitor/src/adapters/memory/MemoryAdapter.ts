@@ -59,7 +59,8 @@ export class MemoryAdapter implements MonitoringStore {
       errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
       totalPromptTokens,
       totalCompletionTokens,
-      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
+      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
+      totalSelfCorrections: requestEnds.filter((e) => (e.correctionRounds ?? 0) > 0).length
     };
   }
 

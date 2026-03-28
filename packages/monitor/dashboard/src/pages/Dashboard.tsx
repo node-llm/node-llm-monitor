@@ -130,6 +130,12 @@ export function Dashboard() {
           icon="⚠️"
           color={stats && stats.errorRate > 5 ? 'error' : 'success'}
         />
+        <StatCard
+          label="Self-Corrections"
+          value={stats?.totalSelfCorrections ?? 0}
+          icon="✨"
+          color="default"
+        />
       </div>
 
       {view === 'metrics' ? (

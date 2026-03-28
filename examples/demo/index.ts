@@ -110,6 +110,11 @@ async function runSimulation() {
         await monitor.onToolCallEnd(ctx, tool, { result: "success" });
       }
     }
+
+    // 4. Randomly add Self-Correction stats (30% chance)
+    if (Math.random() > 0.7) {
+      ctx.state.correctionRounds = Math.floor(Math.random() * 3) + 1;
+    }
     
     // Final Response Details
     const inputTokens = 50 + Math.floor(Math.random() * 500);

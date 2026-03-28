@@ -18,6 +18,7 @@ export interface MonitoringEvent {
   cpuTime?: number | undefined;
   gcTime?: number | undefined;
   allocations?: number | undefined;
+  correctionRounds?: number | undefined;
   payload: Record<string, any>;
   createdAt: Date;
   provider: string;
@@ -33,6 +34,7 @@ export interface MonitoringStats {
   totalPromptTokens: number;
   totalCompletionTokens: number;
   avgTokensPerRequest: number;
+  totalSelfCorrections?: number;
 }
 
 export interface ProviderStats {
@@ -81,6 +83,7 @@ export interface TraceSummary {
   // Token analytics
   promptTokens?: number;
   completionTokens?: number;
+  correctionRounds?: number;
 }
 
 export interface PaginatedTraces {

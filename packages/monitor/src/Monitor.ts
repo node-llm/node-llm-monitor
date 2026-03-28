@@ -118,7 +118,10 @@ export class Monitor {
         result: this.captureContent ? this.scrubContent(result.toString()) : undefined,
         usage: result.usage
       },
-      metrics
+      {
+        ...metrics,
+        correctionRounds: ctx.state?.correctionRounds as number | undefined
+      }
     );
   }
 

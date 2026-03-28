@@ -36,6 +36,7 @@ export interface MonitoringStats {
   totalPromptTokens: number;
   totalCompletionTokens: number;
   avgTokensPerRequest: number;
+  totalSelfCorrections?: number;
 }
 
 export interface ProviderStats {
@@ -84,6 +85,7 @@ export interface TraceSummary {
   // Token analytics
   promptTokens?: number;
   completionTokens?: number;
+  correctionRounds?: number;
 }
 
 export interface PaginatedTraces {

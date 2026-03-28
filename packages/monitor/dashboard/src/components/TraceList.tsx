@@ -79,6 +79,11 @@ function TraceRow({ trace, isSelected, onClick }: TraceRowProps) {
           <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${status.bg} ${status.text} border ${status.border}`}>
             {status.label}
           </span>
+          {trace.correctionRounds && trace.correctionRounds > 0 && (
+            <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              ✨ Self-Corrected ({trace.correctionRounds})
+            </span>
+          )}
           <span className="text-xs text-gray-600 font-mono">{trace.provider}</span>
         </div>
         <span className="text-[10px] text-gray-500">

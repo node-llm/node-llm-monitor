@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { ProviderStats } from '../types';
 
 interface ProviderTableProps {
@@ -19,6 +20,7 @@ function formatTokenCount(count: number): string {
 }
 
 export function ProviderTable({ data, loading }: ProviderTableProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="glass rounded-2xl border border-monitor-border p-6 animate-pulse">
@@ -35,7 +37,7 @@ export function ProviderTable({ data, loading }: ProviderTableProps) {
   if (data.length === 0) {
     return (
       <div className="glass rounded-2xl border border-monitor-border p-8 text-center">
-        <p className="text-gray-500">No provider data available</p>
+        <p className="text-gray-500">{t('metrics.noProviderData') || 'No provider data available'}</p>
       </div>
     );
   }
@@ -43,32 +45,32 @@ export function ProviderTable({ data, loading }: ProviderTableProps) {
   return (
     <div className="glass rounded-2xl border border-monitor-border overflow-hidden">
       <div className="p-4 border-b border-monitor-border">
-        <h3 className="text-sm font-semibold text-gray-900">Usage by Provider/Model</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{t('metrics.usageByProvider') || 'Usage by Provider/Model'}</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-monitor-border bg-gray-50/50">
-              <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Provider / Model
+              <th className="text-start py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.providerModelHeader')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Requests
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.requestsHeader')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tokens
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('navigation.tokens')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Cost
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.costHeader')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                $/1K
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.costPer1kHeader')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Avg Duration
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.avgDurationHeader')}
               </th>
-              <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Errors
+              <th className="text-end py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('metrics.errorCountHeader')}
               </th>
             </tr>
           </thead>
@@ -84,18 +86,18 @@ export function ProviderTable({ data, loading }: ProviderTableProps) {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-600">
+                  <td className="py-3 px-4 text-end text-sm text-gray-600">
                     {row.requests.toLocaleString()}
                   </td>
-                  <td className="py-3 px-4 text-right text-sm">
-                    <span className="text-blue-600" title="Input tokens">{formatTokenCount(row.promptTokens || 0)}</span>
+                  <td className="py-3 px-4 text-end text-sm">
+                    <span className="text-blue-600" title={t('tokens.inputLabel') || 'Input tokens'}>{formatTokenCount(row.promptTokens || 0)}</span>
                     <span className="text-gray-400 mx-1">/</span>
-                    <span className="text-green-600" title="Output tokens">{formatTokenCount(row.completionTokens || 0)}</span>
+                    <span className="text-green-600" title={t('tokens.outputLabel') || 'Output tokens'}>{formatTokenCount(row.completionTokens || 0)}</span>
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-yellow-600 font-medium">
+                  <td className="py-3 px-4 text-end text-sm text-yellow-600 font-medium">
                     ${row.cost.toFixed(4)}
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3 px-4 text-end">
                     <span className={`text-xs px-1.5 py-0.5 rounded ${
                       (row.costPer1kTokens || 0) < 0.01 
                         ? 'bg-green-100 text-green-700'
@@ -106,10 +108,10 @@ export function ProviderTable({ data, loading }: ProviderTableProps) {
                       ${(row.costPer1kTokens || 0).toFixed(4)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-600">
+                  <td className="py-3 px-4 text-end text-sm text-gray-600">
                     {row.avgDuration.toFixed(0)}ms
                   </td>
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3 px-4 text-end">
                     {row.errorCount > 0 ? (
                       <span className="text-sm text-red-600 font-medium">{row.errorCount}</span>
                     ) : (

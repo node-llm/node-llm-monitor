@@ -12,8 +12,13 @@ const monitor = new Monitor({
   captureContent: true // Let's see the prompts
 });
 
-// 3. Create Dashboard instance
-const dashboard = new MonitorDashboard(memoryStore);
+// 3. Create Dashboard instance with all supported languages enabled
+const dashboard = new MonitorDashboard(memoryStore, {
+  i18n: {
+    supportedLngs: ["en", "es", "ar"],
+    fallbackLng: "en"
+  }
+});
 
 // 4. Start a lightweight server for the dashboard
 const server = createServer(async (req, res) => {

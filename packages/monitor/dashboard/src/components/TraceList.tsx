@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { TraceSummary } from '../types';
 
 interface TraceListProps {
@@ -8,6 +9,7 @@ interface TraceListProps {
 }
 
 export function TraceList({ traces, selectedId, onSelect, loading }: TraceListProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="glass rounded-2xl border border-monitor-border p-6">
@@ -24,8 +26,8 @@ export function TraceList({ traces, selectedId, onSelect, loading }: TraceListPr
     return (
       <div className="glass rounded-2xl border border-monitor-border p-12 text-center">
         <span className="text-4xl mb-4 block">🔍</span>
-        <p className="text-gray-600">No traces yet</p>
-        <p className="text-gray-500 text-sm mt-1">Traces will appear here as LLM requests are made</p>
+        <p className="text-gray-600">{t('traces.noTraces')}</p>
+        <p className="text-gray-500 text-sm mt-1">{t('traces.noTracesDesc')}</p>
       </div>
     );
   }
@@ -33,8 +35,8 @@ export function TraceList({ traces, selectedId, onSelect, loading }: TraceListPr
   return (
     <div className="glass rounded-2xl border border-monitor-border overflow-hidden">
       <div className="p-4 border-b border-monitor-border">
-        <h2 className="text-sm font-semibold text-gray-900">Recent Traces</h2>
-        <p className="text-xs text-gray-600 mt-0.5">{traces.length} requests</p>
+        <h2 className="text-sm font-semibold text-gray-900">{t('traces.recentTraces')}</h2>
+        <p className="text-xs text-gray-600 mt-0.5">{t('traces.requests', { count: traces.length })}</p>
       </div>
       
       <div className="divide-y divide-monitor-border max-h-[600px] overflow-y-auto">
@@ -58,10 +60,11 @@ interface TraceRowProps {
 }
 
 function TraceRow({ trace, isSelected, onClick }: TraceRowProps) {
+  const { t } = useTranslation();
   const statusConfig = {
-    success: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Success' },
-    error: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: 'Error' },
-    running: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', label: 'Running' },
+    success: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: t('common.success') },
+    error: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: t('common.error') },
+    running: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', label: t('traces.running') },
   };
 
   const status = statusConfig[trace.status];
@@ -81,7 +84,7 @@ function TraceRow({ trace, isSelected, onClick }: TraceRowProps) {
           </span>
           {trace.correctionRounds && trace.correctionRounds > 0 && (
             <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-              ✨ Self-Corrected ({trace.correctionRounds})
+              ✨ {t('traces.selfCorrected', { count: trace.correctionRounds })}
             </span>
           )}
           <span className="text-xs text-gray-600 font-mono">{trace.provider}</span>

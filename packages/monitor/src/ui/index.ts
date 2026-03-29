@@ -58,6 +58,17 @@ export interface MonitorDashboardOptions {
   pollInterval?: number;
   /** Enable debug logging. Default: false */
   debug?: boolean;
+  /** Internationalization configuration */
+  i18n?: {
+    /** Custom dashboard title */
+    title?: string;
+    /** Supported languages (e.g. ['en', 'ar']) */
+    supportedLngs?: string[];
+    /** Default language */
+    lng?: string;
+    /** Fallback language */
+    fallbackLng?: string;
+  };
 }
 
 export class MonitorDashboard {
@@ -68,6 +79,7 @@ export class MonitorDashboard {
   private readonly cors: CorsConfig;
   private readonly pollInterval: number;
   private readonly debug: boolean;
+  private readonly i18nOptions?: MonitorDashboardOptions["i18n"];
 
   constructor(storeOrPrisma: MonitoringStore | any, options: MonitorDashboardOptions = {}) {
     // Seamless integration: if its not a store but has prisma-like properties, wrap it
@@ -103,6 +115,7 @@ export class MonitorDashboard {
 
     this.cors = options.cors ?? false;
     this.pollInterval = options.pollInterval ?? 5000;
+    this.i18nOptions = options.i18n;
   }
 
   /**
@@ -285,7 +298,16 @@ export class MonitorDashboard {
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
     try {
-      const content = await readFile(fullPath);
+      let content = await readFile(fullPath);
+
+      // Inject i18n configuration into index.html
+      if (ext === ".html" && this.i18nOptions) {
+        const html = content.toString();
+        const injection = `<script>window.__MONITOR_I18N__ = ${JSON.stringify(this.i18nOptions)};</script>`;
+        const injectedHtml = html.replace("<head>", `<head>${injection}`);
+        content = Buffer.from(injectedHtml);
+      }
+
       res.writeHead(200, {
         "Content-Type": contentType,
         "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000"

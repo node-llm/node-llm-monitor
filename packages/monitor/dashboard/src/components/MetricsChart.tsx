@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart,
   Area,
@@ -18,6 +19,7 @@ interface MetricsChartProps {
 }
 
 export function MetricsChart({ title, data, color, formatter, unit }: MetricsChartProps) {
+  const { t } = useTranslation();
   // Transform data for recharts
   const chartData = data.map((point) => ({
     time: point.timestamp,
@@ -36,7 +38,7 @@ export function MetricsChart({ title, data, color, formatter, unit }: MetricsCha
       <div className="h-[200px]">
         {chartData.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-600 text-sm">
-            No data available
+            {t('metrics.noData') || 'No data available'}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">

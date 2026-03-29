@@ -1,40 +1,68 @@
+/**
+ * Layout component with i18n and RTL support.
+ */
 import { ReactNode } from 'react';
-import { IconLogo } from './Icons';
+import { useTranslation } from 'react-i18next';
+import { IconLogo, IconGlobe, IconGitHub } from './Icons';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('monitor_lng', lng);
+  };
+
+  const isRTL = i18n.dir() === 'rtl';
+
   return (
-    <div className="min-h-screen bg-monitor-bg">
+    <div className="min-h-screen bg-monitor-bg dark:bg-slate-950 font-sans" dir={i18n.dir()}>
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-monitor-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <IconLogo />
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">NodeLLM Monitor</h1>
-                <p className="text-xs text-gray-600">Real-time LLM Observability</p>
+              <div className={isRTL ? 'text-right' : 'text-left'}>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dashboard.title')}</h1>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboard.subtitle')}</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
+            <div className="flex items-center gap-6">
+              {/* Modern Language Switcher */}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+                <IconGlobe className="w-4 h-4 text-gray-500 group-hover:text-monitor-accent transition-colors" />
+                <select 
+                  className="text-xs font-bold bg-transparent border-none appearance-none outline-none text-gray-800 dark:text-gray-200 cursor-pointer hover:text-monitor-accent transition-all uppercase tracking-widest pl-0.5"
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  value={i18n.language}
+                >
+                  {(i18n.options.supportedLngs as string[] || ['en']).filter(l => l !== 'cimode').map((lang) => (
+                    <option key={lang} value={lang} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 font-medium">
+                      {lang.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-xs text-green-700 font-medium">Live</span>
+                <span className="text-xs text-green-700 dark:text-green-400 font-medium">Live</span>
               </div>
               
               <a 
                 href="https://github.com/node-llm/node-llm-monitor" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                title="GitHub Repository"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" />
-                </svg>
+                <IconGitHub className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -47,10 +75,10 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-monitor-border mt-auto">
+      <footer className="border-t border-monitor-border dark:border-slate-800 mt-auto bg-white/50 dark:bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-xs text-gray-600">
-            NodeLLM Monitor • Built for production LLM observability
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">
+            {t('dashboard.title')} • {t('dashboard.subtitle')}
           </p>
         </div>
       </footer>

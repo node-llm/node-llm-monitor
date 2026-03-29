@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MonitoringEvent, TraceSummary } from '../types';
 
 interface TraceDetailProps {
@@ -9,12 +10,13 @@ interface TraceDetailProps {
 }
 
 export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProps) {
+  const { t } = useTranslation();
   if (!trace) {
     return (
       <div className="glass rounded-2xl border border-dashed border-monitor-border p-12 text-center text-gray-700 flex flex-col items-center justify-center h-full min-h-[400px]">
         <span className="text-4xl mb-4">🔍</span>
-        <p className="font-medium">Select a trace to view details</p>
-        <p className="text-sm text-gray-600 mt-1">Click on any trace from the list</p>
+        <p className="font-medium">{t('traces.selectTrace')}</p>
+        <p className="text-sm text-gray-600 mt-1">{t('traces.clickTrace')}</p>
       </div>
     );
   }
@@ -46,7 +48,7 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
     <div className="glass rounded-2xl border border-monitor-border glow p-6 sticky top-24 animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Trace Detail</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('traces.traceDetail')}</h2>
         <button 
           onClick={onClose} 
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
@@ -58,15 +60,15 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
       <div className="space-y-4">
         {/* Provider & Model */}
         <div className="p-4 bg-gray-50/50 rounded-xl border border-monitor-border">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Provider / Model</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('traces.providerModel')}</p>
           <p className="text-sm font-medium text-gray-900">{trace.provider} / {trace.model}</p>
           <div className="mt-2 flex items-center gap-2">
             <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${status.bg} ${status.text} border ${status.border}`}>
-              {trace.status.toUpperCase()}
+              {t(`common.${trace.status}`)}
             </span>
             {trace.correctionRounds && trace.correctionRounds > 0 && (
               <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                ✨ SELF-CORRECTED ({trace.correctionRounds})
+                ✨ {t('traces.selfCorrected', { count: trace.correctionRounds })}
               </span>
             )}
           </div>
@@ -74,14 +76,14 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <MetricBox label="Duration" value={`${(trace.duration || 0).toFixed(0)}ms`} icon="⏱" />
-          <MetricBox label="Cost" value={`$${(trace.cost || 0).toFixed(4)}`} icon="💰" />
-          <MetricBox label="CPU Time" value={`${(trace.cpuTime || 0).toFixed(2)}ms`} icon="🔧" />
+          <MetricBox label={t('traces.duration')} value={`${(trace.duration || 0).toFixed(0)}ms`} icon="⏱" />
+          <MetricBox label={t('traces.cost')} value={`$${(trace.cost || 0).toFixed(4)}`} icon="💰" />
+          <MetricBox label={t('traces.cpuTime')} value={`${(trace.cpuTime || 0).toFixed(2)}ms`} icon="🔧" />
           {trace.correctionRounds && trace.correctionRounds > 0 ? (
-            <MetricBox label="Corrections" value={`${trace.correctionRounds}`} icon="✨" />
+            <MetricBox label={t('traces.corrections')} value={`${trace.correctionRounds}`} icon="✨" />
           ) : (
             <MetricBox 
-              label="Memory" 
+              label={t('traces.memory')} 
               value={`${((trace.allocations || 0) / 1024 / 1024).toFixed(2)}MB`} 
               icon="📊" 
             />
@@ -90,13 +92,13 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
 
         {/* Request ID */}
         <div className="p-3 bg-gray-50/50 rounded-xl border border-monitor-border">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Request ID</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('traces.requestId')}</p>
           <p className="text-xs font-mono text-gray-600 break-all">{trace.requestId}</p>
         </div>
 
         {/* Execution Flow */}
         <div>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Execution Flow</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">{t('traces.executionFlow')}</p>
           <div className="space-y-1">
             {events.map((event, index) => (
               <EventRow key={event.id} event={event} isLast={index === events.length - 1} />
@@ -107,7 +109,7 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
         {/* Error Display */}
         {trace.status === 'error' && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-[10px] text-red-700 uppercase tracking-wider font-bold mb-2">Error Detected</p>
+            <p className="text-[10px] text-red-700 uppercase tracking-wider font-bold mb-2">{t('common.errorDetected') || 'Error Detected'}</p>
             <p className="text-sm text-red-800">
               {events.find(e => e.eventType === 'request.error')?.payload?.error || 'Unknown error'}
             </p>
@@ -145,6 +147,7 @@ interface EventRowProps {
 }
 
 function EventRow({ event, isLast }: EventRowProps) {
+  const { t } = useTranslation();
   const eventConfig: Record<string, { icon: string; color: string }> = {
     'request.start': { icon: '▶️', color: 'text-blue-600' },
     'request.end': { icon: '✅', color: 'text-green-600' },
@@ -158,28 +161,39 @@ function EventRow({ event, isLast }: EventRowProps) {
   const time = new Date(event.time);
   const toolName = event.payload?.toolCall?.function?.name;
 
+  // Map event types to translation keys
+  const eventTypeLabels: Record<string, string> = {
+    'request.start': t('traces.eventTypes.requestStart'),
+    'request.end': t('traces.eventTypes.requestEnd'),
+    'request.error': t('traces.eventTypes.requestError'),
+    'tool.start': t('traces.eventTypes.toolStart'),
+    'tool.end': t('traces.eventTypes.toolEnd'),
+    'tool.error': t('traces.eventTypes.toolError'),
+  };
+  const eventLabel = eventTypeLabels[event.eventType] || event.eventType;
+
   return (
-    <div className={`flex items-start gap-3 text-xs pl-4 py-2 relative ${
-      !isLast ? 'border-l-2 border-monitor-border' : ''
+    <div className={`flex items-start gap-3 text-xs ps-4 py-2 relative ${
+      !isLast ? 'border-s-2 border-monitor-border' : ''
     }`}>
-      <div className={`w-6 h-6 rounded-full bg-monitor-card border-2 border-monitor-border flex items-center justify-center -ml-[15px] text-[10px]`}>
+      <div className={`w-6 h-6 rounded-full bg-monitor-card border-2 border-monitor-border flex items-center justify-center -ms-[15px] text-[10px]`}>
         {config.icon}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <p className={`font-medium ${config.color}`}>{event.eventType}</p>
+          <p className={`font-medium ${config.color}`}>{eventLabel}</p>
           <p className="text-[10px] text-gray-500">{time.toLocaleTimeString()}</p>
         </div>
         
         {toolName && (
           <div className="mt-1 p-2 bg-yellow-50 rounded text-yellow-800 font-mono text-[10px] border border-yellow-200">
-            Tool: {toolName}
+            {t('traces.toolLabel')}: {toolName}
           </div>
         )}
         
         {event.duration && (
-          <p className="text-[10px] text-gray-500 mt-1">Duration: {event.duration.toFixed(0)}ms</p>
+          <p className="text-[10px] text-gray-500 mt-1">{t('traces.duration')}: {event.duration.toFixed(0)}ms</p>
         )}
       </div>
     </div>
@@ -194,6 +208,7 @@ interface ContentDisplayProps {
 }
 
 function ContentDisplay({ events }: ContentDisplayProps) {
+  const { t } = useTranslation();
   const [showContent, setShowContent] = useState(false);
   
   // Extract content from events
@@ -211,7 +226,7 @@ function ContentDisplay({ events }: ContentDisplayProps) {
     return (
       <div className="p-3 bg-gray-50/50 rounded-xl border border-monitor-border text-center">
         <p className="text-xs text-gray-500">
-          💡 Content capture is disabled. Enable <code className="bg-gray-200 px-1 rounded">captureContent: true</code> to see prompts and responses.
+          💡 {t('traces.contentDisabled')}
         </p>
       </div>
     );
@@ -220,12 +235,12 @@ function ContentDisplay({ events }: ContentDisplayProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Request & Response</p>
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider">{t('traces.requestAndResponse')}</p>
         <button
           onClick={() => setShowContent(!showContent)}
           className="text-xs text-monitor-accent hover:underline"
         >
-          {showContent ? 'Hide Content' : 'Show Content'}
+          {showContent ? t('common.hideContent') : t('common.showContent')}
         </button>
       </div>
       
@@ -281,6 +296,7 @@ interface MessageBubbleProps {
 }
 
 function MessageBubble({ message }: MessageBubbleProps) {
+  const { t } = useTranslation();
   const role = message.role || 'unknown';
   const content = typeof message.content === 'string' 
     ? message.content 
@@ -289,11 +305,11 @@ function MessageBubble({ message }: MessageBubbleProps) {
       : JSON.stringify(message.content);
   
   const roleConfig: Record<string, { bg: string; label: string }> = {
-    system: { bg: 'bg-purple-100', label: '🔧 System' },
-    user: { bg: 'bg-blue-100', label: '👤 User' },
-    assistant: { bg: 'bg-green-100', label: '🤖 Assistant' },
-    tool: { bg: 'bg-yellow-100', label: '🔧 Tool' },
-    unknown: { bg: 'bg-gray-100', label: '❓ Unknown' },
+    system: { bg: 'bg-purple-100', label: `🔧 ${t('traces.system')}` },
+    user: { bg: 'bg-blue-100', label: `👤 ${t('traces.user')}` },
+    assistant: { bg: 'bg-green-100', label: `🤖 ${t('traces.assistant')}` },
+    tool: { bg: 'bg-yellow-100', label: `🔧 ${t('traces.tool')}` },
+    unknown: { bg: 'bg-gray-100', label: `❓ ${t('traces.unknown')}` },
   };
   
   const config = roleConfig[role] || roleConfig.unknown;
@@ -304,7 +320,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`p-2 rounded ${isCorrectionFeedback ? 'bg-indigo-100 border border-indigo-200' : config.bg}`}>
       <p className={`text-[10px] font-bold mb-1 ${isCorrectionFeedback ? 'text-indigo-700' : 'text-gray-600'}`}>
-        {isCorrectionFeedback ? '✨ Correction Feedback' : config.label}
+        {isCorrectionFeedback ? `✨ ${t('traces.correctionFeedback')}` : config.label}
       </p>
       <p className="text-xs text-gray-800 whitespace-pre-wrap">{content}</p>
     </div>

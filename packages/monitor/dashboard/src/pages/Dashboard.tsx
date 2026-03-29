@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMonitor } from '../hooks/useMonitor';
 import { 
   StatCard, 
@@ -24,6 +25,7 @@ import {
 type View = 'metrics' | 'tokens' | 'traces';
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const [view, setView] = useState<View>('metrics');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const {
@@ -56,7 +58,7 @@ export function Dashboard() {
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            <IconBarChart className="w-4 h-4" /> Metrics
+            <IconBarChart className="w-4 h-4" /> {t('navigation.metrics')}
           </button>
           <button
             onClick={() => setView('tokens')}
@@ -66,7 +68,7 @@ export function Dashboard() {
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            <IconTarget className="w-4 h-4" /> Tokens
+            <IconTarget className="w-4 h-4" /> {t('navigation.tokens')}
           </button>
           <button
             onClick={() => setView('traces')}
@@ -76,7 +78,7 @@ export function Dashboard() {
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            <IconSearch className="w-4 h-4" /> Traces
+            <IconSearch className="w-4 h-4" /> {t('navigation.traces')}
           </button>
         </div>
         
@@ -93,7 +95,7 @@ export function Dashboard() {
             title={autoRefresh ? 'Auto-refresh enabled (5s)' : 'Auto-refresh disabled'}
           >
             <IconRefresh className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} style={autoRefresh ? { animationDuration: '3s' } : undefined} />
-            <span className="hidden sm:inline">{autoRefresh ? 'Auto' : 'Manual'}</span>
+            <span className="hidden sm:inline">{autoRefresh ? t('common.auto') : t('common.manual')}</span>
           </button>
         </div>
       </div>
@@ -109,7 +111,7 @@ export function Dashboard() {
             onClick={refresh}
             className="px-3 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-colors"
           >
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       )}
@@ -117,31 +119,31 @@ export function Dashboard() {
       {/* Stats Grid - Always visible */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Requests"
+          label={t('dashboard.totalRequests')}
           value={stats?.totalRequests ?? 0}
           icon={<IconBarChart />}
           color="default"
         />
         <StatCard
-          label="Est. Cost"
+          label={t('dashboard.estCost')}
           value={`$${(stats?.totalCost ?? 0).toFixed(4)}`}
           icon={<IconDollar />}
           color="warning"
         />
         <StatCard
-          label="Avg Response Time"
+          label={t('dashboard.avgResponseTime')}
           value={`${(stats?.avgDuration ?? 0).toFixed(0)}ms`}
           icon={<IconClock />}
           color="default"
         />
         <StatCard
-          label="Error Rate"
+          label={t('dashboard.errorRate')}
           value={`${(stats?.errorRate ?? 0).toFixed(1)}%`}
           icon={<IconAlertTriangle />}
           color={stats && stats.errorRate > 5 ? 'error' : 'success'}
         />
         <StatCard
-          label="Self-Corrections"
+          label={t('dashboard.selfCorrections')}
           value={stats?.totalSelfCorrections ?? 0}
           icon={<IconSparkle />}
           color="default"
@@ -159,27 +161,26 @@ export function Dashboard() {
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <MetricsChart
-              title="Requests"
-              data={metrics?.timeSeries.requests ?? []}
-              color="#6366f1"
+              title={t('dashboard.inputTokens')}
+              data={metrics?.timeSeries.promptTokens ?? []}
+              color="#3b82f6"
               unit=""
             />
             <MetricsChart
-              title="Cost"
-              data={metrics?.timeSeries.cost ?? []}
-              color="#f59e0b"
-              formatter={(v) => `$${v.toFixed(4)}`}
+              title={t('dashboard.outputTokens')}
+              data={metrics?.timeSeries.completionTokens ?? []}
+              color="#10b981"
               unit=""
             />
             <MetricsChart
-              title="Response Time"
+              title={t('dashboard.responseTimeTitle')}
               data={metrics?.timeSeries.duration ?? []}
               color="#22c55e"
               formatter={(v) => v.toFixed(0)}
               unit="ms"
             />
             <MetricsChart
-              title="Errors"
+              title={t('dashboard.errorsTitle')}
               data={metrics?.timeSeries.errors ?? []}
               color="#ef4444"
               unit=""
@@ -201,7 +202,7 @@ export function Dashboard() {
             <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-4 rounded-xl space-y-3">
               <div className="flex gap-3">
                 <DebouncedInput
-                  placeholder="Search (ID, Model, Provider)..."
+                  placeholder={t('dashboard.searchPlaceholder')}
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
                   value={filters.query || ''}
                   onChange={(value) => setFilters({ ...filters, query: value || undefined })}
@@ -211,20 +212,20 @@ export function Dashboard() {
                   value={filters.status || ''}
                   onChange={(e) => setFilters({ ...filters, status: (e.target.value as any) || undefined })}
                 >
-                  <option value="">All Status</option>
-                  <option value="success">Success</option>
-                  <option value="error">Error</option>
+                  <option value="">{t('common.allStatus')}</option>
+                  <option value="success">{t('common.success')}</option>
+                  <option value="error">{t('common.error')}</option>
                 </select>
               </div>
               <div className="flex gap-3">
                 <DebouncedInput
-                  placeholder="Provider (e.g. openai)..."
+                  placeholder={t('dashboard.providerPlaceholder')}
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
                   value={filters.provider || ''}
                   onChange={(value) => setFilters({ ...filters, provider: value || undefined })}
                 />
                 <DebouncedInput
-                  placeholder="Model (e.g. gpt-4)..."
+                  placeholder={t('dashboard.modelPlaceholder')}
                   className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-monitor-accent/50"
                   value={filters.model || ''}
                   onChange={(value) => setFilters({ ...filters, model: value || undefined })}
@@ -260,12 +261,12 @@ export function Dashboard() {
           {loading ? (
             <>
               <span className="w-4 h-4 border-2 border-monitor-accent-light/30 border-t-monitor-accent-light rounded-full animate-spin" />
-              Loading...
+              {t('common.loading')}
             </>
           ) : (
             <>
               <IconRefresh />
-              Refresh
+              {t('common.refresh')}
             </>
           )}
         </button>

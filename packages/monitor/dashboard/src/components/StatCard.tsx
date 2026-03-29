@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface StatCardProps {
   label: string;
@@ -26,6 +27,7 @@ const iconColorMap = {
 };
 
 export function StatCard({ label, value, icon, color = 'default', change }: StatCardProps) {
+  const { t } = useTranslation();
   return (
     <div className="glass p-5 rounded-2xl glow hover:border-monitor-accent/30 transition-all border border-monitor-border animate-fade-in">
       <div className="flex justify-between items-start mb-3">
@@ -43,7 +45,7 @@ export function StatCard({ label, value, icon, color = 'default', change }: Stat
         }`}>
           <span>{change.trend === 'up' ? '↑' : '↓'}</span>
           <span>{Math.abs(change.value)}%</span>
-          <span className="text-gray-500">vs last hour</span>
+          <span className="text-gray-500">{t('common.vsLastHour')}</span>
         </div>
       )}
     </div>

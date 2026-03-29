@@ -114,8 +114,14 @@ async function main(options: {
     scrubbing: { pii: true, secrets: true },
   });
 
-  // ─── 2. Start Dashboard ───
-  const dashboard = new MonitorDashboard(store);
+  // ─── 2. Start Dashboard with custom title and languages ───
+  const dashboard = new MonitorDashboard(store, {
+    i18n: {
+      title: "NodeLLM Monitor",
+      supportedLngs: ["en", "ar"],
+      fallbackLng: "en"
+    }
+  });
   createServer((req, res) => {
     dashboard.handleRequest(
       { url: req.url ?? "", headers: req.headers as Record<string, string>, method: req.method ?? "GET" },

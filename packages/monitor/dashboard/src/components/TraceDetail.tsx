@@ -64,6 +64,11 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
             <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${status.bg} ${status.text} border ${status.border}`}>
               {trace.status.toUpperCase()}
             </span>
+            {trace.correctionRounds && trace.correctionRounds > 0 && (
+              <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                ✨ SELF-CORRECTED ({trace.correctionRounds})
+              </span>
+            )}
           </div>
         </div>
 
@@ -72,11 +77,15 @@ export function TraceDetail({ trace, events, onClose, loading }: TraceDetailProp
           <MetricBox label="Duration" value={`${(trace.duration || 0).toFixed(0)}ms`} icon="⏱" />
           <MetricBox label="Cost" value={`$${(trace.cost || 0).toFixed(4)}`} icon="💰" />
           <MetricBox label="CPU Time" value={`${(trace.cpuTime || 0).toFixed(2)}ms`} icon="🔧" />
-          <MetricBox 
-            label="Memory" 
-            value={`${((trace.allocations || 0) / 1024 / 1024).toFixed(2)}MB`} 
-            icon="📊" 
-          />
+          {trace.correctionRounds && trace.correctionRounds > 0 ? (
+            <MetricBox label="Corrections" value={`${trace.correctionRounds}`} icon="✨" />
+          ) : (
+            <MetricBox 
+              label="Memory" 
+              value={`${((trace.allocations || 0) / 1024 / 1024).toFixed(2)}MB`} 
+              icon="📊" 
+            />
+          )}
         </div>
 
         {/* Request ID */}
@@ -188,8 +197,9 @@ function ContentDisplay({ events }: ContentDisplayProps) {
   const [showContent, setShowContent] = useState(false);
   
   // Extract content from events
-  const requestStart = events.find(e => e.eventType === 'request.start');
-  const requestEnd = events.find(e => e.eventType === 'request.end');
+  // Extract content from events - prioritising the final response for corrected requests
+  const requestStart = [...events].reverse().find(e => e.eventType === 'request.start');
+  const requestEnd = [...events].reverse().find(e => e.eventType === 'request.end');
   
   const messages = requestStart?.payload?.messages;
   const result = requestEnd?.payload?.result;
@@ -288,9 +298,14 @@ function MessageBubble({ message }: MessageBubbleProps) {
   
   const config = roleConfig[role] || roleConfig.unknown;
   
+  // Highlight self-correction feedback messages
+  const isCorrectionFeedback = content.includes('Validation failed') && (role === 'user' || role === 'system');
+  
   return (
-    <div className={`p-2 rounded ${config.bg}`}>
-      <p className="text-[10px] text-gray-600 font-bold mb-1">{config.label}</p>
+    <div className={`p-2 rounded ${isCorrectionFeedback ? 'bg-indigo-100 border border-indigo-200' : config.bg}`}>
+      <p className={`text-[10px] font-bold mb-1 ${isCorrectionFeedback ? 'text-indigo-700' : 'text-gray-600'}`}>
+        {isCorrectionFeedback ? '✨ Correction Feedback' : config.label}
+      </p>
       <p className="text-xs text-gray-800 whitespace-pre-wrap">{content}</p>
     </div>
   );

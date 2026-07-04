@@ -109,7 +109,10 @@ export class ContentScrubber {
   scrubObject<T extends Record<string, any>>(obj: T, seen = new WeakSet()): T {
     if (!obj || typeof obj !== "object") return obj;
 
-    // Prevent circular references
+    // Prevent circular references. `seen` tracks the current recursion path
+    // (ancestors), not every object ever visited - it's removed on exit
+    // below so a value merely *referenced* twice (not circular) isn't
+    // mistaken for a cycle.
     if (seen.has(obj)) {
       return "[Circular]" as any;
     }
@@ -146,6 +149,7 @@ export class ContentScrubber {
       }
     }
 
+    seen.delete(obj);
     return scrubbed;
   }
 

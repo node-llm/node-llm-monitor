@@ -179,6 +179,20 @@ describe("ContentScrubber", () => {
       expect(result.self).toBe("[Circular]");
     });
 
+    it("should scrub a shared (non-circular) object reference at every occurrence", () => {
+      const scrubber = new ContentScrubber();
+      const user = { email: "shared@example.com" };
+      const obj = {
+        request: { user },
+        response: { user } // same reference, appears twice, but NOT circular
+      };
+
+      const result = scrubber.scrubObject(obj);
+      expect(result.request.user.email).toContain("[EMAIL]");
+      expect(result.response.user.email).toContain("[EMAIL]");
+      expect(result.response.user).not.toBe("[Circular]");
+    });
+
     it("should exclude specified fields", () => {
       const scrubber = new ContentScrubber({ excludeFields: ["password"] });
       const obj = {

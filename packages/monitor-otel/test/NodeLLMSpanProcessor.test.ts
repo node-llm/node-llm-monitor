@@ -72,6 +72,31 @@ describe("NodeLLMSpanProcessor", () => {
     expect(event.payload.usage.totalTokens).toBe(225);
   });
 
+  it("should include cache/reasoning token usage from GenAI spans", async () => {
+    const span = createMockSpan("gen_ai.chat", {
+      attributes: {
+        "ai.model.id": undefined,
+        "ai.model.provider": undefined,
+        "gen_ai.system": "anthropic",
+        "gen_ai.request.model": "claude-3-5-sonnet",
+        "gen_ai.usage.input_tokens": 150,
+        "gen_ai.usage.output_tokens": 75,
+        "gen_ai.usage.cache_read.input_tokens": 100,
+        "gen_ai.usage.cache_creation.input_tokens": 20,
+        "gen_ai.usage.reasoning.output_tokens": 15
+      }
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    const event = (mockStore.saveEvent as any).mock.calls[0][0];
+
+    expect(event.payload.usage.cachedTokens).toBe(100);
+    expect(event.payload.usage.cacheCreationTokens).toBe(20);
+    expect(event.payload.usage.reasoningTokens).toBe(15);
+  });
+
   it("should ignore non-AI spans", async () => {
     const span = createMockSpan("http.get");
 

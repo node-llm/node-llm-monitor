@@ -259,6 +259,27 @@ describe("eventToTraceSummary", () => {
     expect(summary.completionTokens).toBe(75);
   });
 
+  it("should include cache/reasoning/image token counts from payload.usage", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          input_tokens: 150,
+          output_tokens: 75,
+          cached_tokens: 100,
+          cache_creation_tokens: 20,
+          reasoning_tokens: 10,
+          image_tokens: 5
+        }
+      }
+    });
+    const summary = eventToTraceSummary(event);
+
+    expect(summary.cachedTokens).toBe(100);
+    expect(summary.cacheCreationTokens).toBe(20);
+    expect(summary.reasoningTokens).toBe(10);
+    expect(summary.imageTokens).toBe(5);
+  });
+
   it("should not include token fields when zero", () => {
     const event = createEvent({
       payload: {
@@ -325,5 +346,62 @@ describe("extractTokens", () => {
 
     expect(tokens.prompt).toBe(0);
     expect(tokens.completion).toBe(0);
+  });
+
+  it("should extract NodeLLM-native cache/reasoning/image token fields", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+          cached_tokens: 80,
+          cache_creation_tokens: 20,
+          reasoning_tokens: 30,
+          image_tokens: 10
+        }
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.cached).toBe(80);
+    expect(tokens.cacheCreation).toBe(20);
+    expect(tokens.reasoning).toBe(30);
+    expect(tokens.image).toBe(10);
+  });
+
+  it("should extract OTel GenAI semantic convention cache/reasoning token fields", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+          cache_read_input_tokens: 75,
+          cache_creation_input_tokens: 25,
+          reasoning_output_tokens: 15
+        }
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.cached).toBe(75);
+    expect(tokens.cacheCreation).toBe(25);
+    expect(tokens.reasoning).toBe(15);
+  });
+
+  it("should extract Vercel AI SDK style cache/reasoning token fields", () => {
+    const event = createEvent({
+      payload: {
+        usage: {
+          promptTokens: 100,
+          completionTokens: 50,
+          cachedInputTokens: 60,
+          reasoningTokens: 12
+        }
+      }
+    });
+    const tokens = extractTokens(event);
+
+    expect(tokens.cached).toBe(60);
+    expect(tokens.reasoning).toBe(12);
   });
 });

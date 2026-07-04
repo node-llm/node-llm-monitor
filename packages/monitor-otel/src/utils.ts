@@ -131,6 +131,8 @@ export function extractAIAttributes(span: OTelReadableSpan): AISpanAttributes {
     // Usage - AI SDK attributes
     promptTokens: getNumber(attrs, "ai.usage.promptTokens"),
     completionTokens: getNumber(attrs, "ai.usage.completionTokens"),
+    cachedInputTokens: getNumber(attrs, "ai.usage.cachedInputTokens"),
+    reasoningTokens: getNumber(attrs, "ai.usage.reasoningTokens"),
 
     // Timing (streaming)
     msToFirstChunk: getNumber(attrs, "ai.response.msToFirstChunk"),
@@ -149,6 +151,9 @@ export function extractAIAttributes(span: OTelReadableSpan): AISpanAttributes {
     genAiResponseModel: getString(attrs, "gen_ai.response.model"),
     genAiInputTokens: getNumber(attrs, "gen_ai.usage.input_tokens"),
     genAiOutputTokens: getNumber(attrs, "gen_ai.usage.output_tokens"),
+    genAiCacheReadInputTokens: getNumber(attrs, "gen_ai.usage.cache_read.input_tokens"),
+    genAiCacheCreationInputTokens: getNumber(attrs, "gen_ai.usage.cache_creation.input_tokens"),
+    genAiReasoningOutputTokens: getNumber(attrs, "gen_ai.usage.reasoning.output_tokens"),
 
     // Custom metadata
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined

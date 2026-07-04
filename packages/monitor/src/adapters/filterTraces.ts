@@ -1,4 +1,5 @@
 import type { MonitoringEvent, TraceFilters, TraceSummary } from "../types.js";
+import { extractTokenUsage, type ExtractedTokenUsage } from "./tokenExtraction.js";
 
 /**
  * Predicate function type for filtering events.
@@ -6,49 +7,11 @@ import type { MonitoringEvent, TraceFilters, TraceSummary } from "../types.js";
 type FilterPredicate = (event: MonitoringEvent) => boolean;
 
 /**
- * Extract token counts from event payload.
+ * Extract token counts from an event's payload. Handles multiple naming
+ * conventions from different providers/SDKs (see tokenExtraction.ts).
  */
-export function extractTokens(event: MonitoringEvent): { prompt: number; completion: number } {
-  const payload = event.payload || {};
-
-  // Check usage object (most common)
-  if (payload.usage) {
-    return {
-      // Support multiple naming conventions:
-      // - Vercel AI SDK: promptTokens/completionTokens
-      // - OpenAI snake_case: prompt_tokens/completion_tokens
-      // - Anthropic/industry: input_tokens/output_tokens
-      // - NodeLLM camelCase: inputTokens/outputTokens
-      prompt:
-        payload.usage.promptTokens ||
-        payload.usage.prompt_tokens ||
-        payload.usage.inputTokens ||
-        payload.usage.input_tokens ||
-        0,
-      completion:
-        payload.usage.completionTokens ||
-        payload.usage.completion_tokens ||
-        payload.usage.outputTokens ||
-        payload.usage.output_tokens ||
-        0
-    };
-  }
-
-  // Direct fields (some providers)
-  return {
-    prompt:
-      payload.promptTokens ||
-      payload.prompt_tokens ||
-      payload.inputTokens ||
-      payload.input_tokens ||
-      0,
-    completion:
-      payload.completionTokens ||
-      payload.completion_tokens ||
-      payload.outputTokens ||
-      payload.output_tokens ||
-      0
-  };
+export function extractTokens(event: MonitoringEvent): ExtractedTokenUsage {
+  return extractTokenUsage(event.payload);
 }
 
 /**
@@ -179,6 +142,10 @@ export function eventToTraceSummary(event: MonitoringEvent): TraceSummary {
   if (event.allocations !== undefined) summary.allocations = event.allocations;
   if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
   if (tokens.completion > 0) summary.completionTokens = tokens.completion;
+  if (tokens.cached > 0) summary.cachedTokens = tokens.cached;
+  if (tokens.cacheCreation > 0) summary.cacheCreationTokens = tokens.cacheCreation;
+  if (tokens.reasoning > 0) summary.reasoningTokens = tokens.reasoning;
+  if (tokens.image > 0) summary.imageTokens = tokens.image;
   if (event.correctionRounds !== undefined) summary.correctionRounds = event.correctionRounds;
 
   return summary;

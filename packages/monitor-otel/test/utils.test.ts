@@ -106,6 +106,38 @@ describe("otel utils", () => {
       expect(attrs.genAiOutputTokens).toBe(25);
     });
 
+    it("should extract OTel GenAI cache/reasoning token attributes", () => {
+      const span = {
+        attributes: {
+          "gen_ai.usage.input_tokens": 100,
+          "gen_ai.usage.output_tokens": 50,
+          "gen_ai.usage.cache_read.input_tokens": 75,
+          "gen_ai.usage.cache_creation.input_tokens": 25,
+          "gen_ai.usage.reasoning.output_tokens": 10
+        }
+      } as any;
+
+      const attrs = extractAIAttributes(span);
+      expect(attrs.genAiCacheReadInputTokens).toBe(75);
+      expect(attrs.genAiCacheCreationInputTokens).toBe(25);
+      expect(attrs.genAiReasoningOutputTokens).toBe(10);
+    });
+
+    it("should extract Vercel AI SDK cache/reasoning token attributes", () => {
+      const span = {
+        attributes: {
+          "ai.usage.promptTokens": 100,
+          "ai.usage.completionTokens": 50,
+          "ai.usage.cachedInputTokens": 60,
+          "ai.usage.reasoningTokens": 12
+        }
+      } as any;
+
+      const attrs = extractAIAttributes(span);
+      expect(attrs.cachedInputTokens).toBe(60);
+      expect(attrs.reasoningTokens).toBe(12);
+    });
+
     it("should extract custom metadata", () => {
       const span = {
         attributes: {

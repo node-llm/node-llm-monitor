@@ -83,6 +83,10 @@ export interface TraceSummary {
   // Token analytics
   promptTokens?: number;
   completionTokens?: number;
+  cachedTokens?: number;
+  cacheCreationTokens?: number;
+  reasoningTokens?: number;
+  imageTokens?: number;
   correctionRounds?: number;
 }
 

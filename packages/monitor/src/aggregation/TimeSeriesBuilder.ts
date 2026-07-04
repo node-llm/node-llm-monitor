@@ -1,50 +1,5 @@
 import type { MonitoringEvent, MetricsData, ProviderStats } from "../types.js";
-
-/**
- * Extract token counts from event payload.
- * Handles multiple naming conventions from different providers.
- */
-function extractTokens(event: MonitoringEvent): { prompt: number; completion: number } {
-  const payload = event.payload || {};
-
-  if (payload.usage) {
-    return {
-      // Support multiple naming conventions:
-      // - Vercel AI SDK: promptTokens/completionTokens
-      // - OpenAI snake_case: prompt_tokens/completion_tokens
-      // - Anthropic/industry: input_tokens/output_tokens
-      // - NodeLLM camelCase: inputTokens/outputTokens
-      prompt:
-        payload.usage.promptTokens ||
-        payload.usage.prompt_tokens ||
-        payload.usage.inputTokens ||
-        payload.usage.input_tokens ||
-        0,
-      completion:
-        payload.usage.completionTokens ||
-        payload.usage.completion_tokens ||
-        payload.usage.outputTokens ||
-        payload.usage.output_tokens ||
-        0
-    };
-  }
-
-  // Direct fields (some providers)
-  return {
-    prompt:
-      payload.promptTokens ||
-      payload.prompt_tokens ||
-      payload.inputTokens ||
-      payload.input_tokens ||
-      0,
-    completion:
-      payload.completionTokens ||
-      payload.completion_tokens ||
-      payload.outputTokens ||
-      payload.output_tokens ||
-      0
-  };
-}
+import { extractTokens } from "../adapters/filterTraces.js";
 
 interface BucketData {
   requests: number;

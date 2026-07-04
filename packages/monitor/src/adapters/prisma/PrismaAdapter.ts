@@ -8,6 +8,7 @@ import type {
   TraceFilters
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
+import { extractTokenUsage } from "../tokenExtraction.js";
 
 /**
  * Builds Prisma WHERE clause from trace filters.
@@ -67,7 +68,7 @@ function buildPrismaWhereClause(options: TraceFilters): Record<string, any> {
  * Converts a Prisma event record to a TraceSummary.
  */
 function prismaEventToTraceSummary(event: any): TraceSummary {
-  const tokens = extractTokensFromPayload(event.payload);
+  const tokens = extractTokenUsage(event.payload);
   const summary: TraceSummary = {
     requestId: event.requestId,
     provider: event.provider,
@@ -85,52 +86,12 @@ function prismaEventToTraceSummary(event: any): TraceSummary {
   // Only set token properties if they have values
   if (tokens.prompt > 0) summary.promptTokens = tokens.prompt;
   if (tokens.completion > 0) summary.completionTokens = tokens.completion;
+  if (tokens.cached > 0) summary.cachedTokens = tokens.cached;
+  if (tokens.cacheCreation > 0) summary.cacheCreationTokens = tokens.cacheCreation;
+  if (tokens.reasoning > 0) summary.reasoningTokens = tokens.reasoning;
+  if (tokens.image > 0) summary.imageTokens = tokens.image;
 
   return summary;
-}
-
-/**
- * Extract token counts from event payload.
- */
-function extractTokensFromPayload(payload: any): { prompt: number; completion: number } {
-  if (!payload) return { prompt: 0, completion: 0 };
-
-  if (payload.usage) {
-    return {
-      // Support multiple naming conventions:
-      // - Vercel AI SDK: promptTokens/completionTokens
-      // - OpenAI snake_case: prompt_tokens/completion_tokens
-      // - Anthropic/industry: input_tokens/output_tokens
-      // - NodeLLM camelCase: inputTokens/outputTokens
-      prompt:
-        payload.usage.promptTokens ||
-        payload.usage.prompt_tokens ||
-        payload.usage.inputTokens ||
-        payload.usage.input_tokens ||
-        0,
-      completion:
-        payload.usage.completionTokens ||
-        payload.usage.completion_tokens ||
-        payload.usage.outputTokens ||
-        payload.usage.output_tokens ||
-        0
-    };
-  }
-
-  return {
-    prompt:
-      payload.promptTokens ||
-      payload.prompt_tokens ||
-      payload.inputTokens ||
-      payload.input_tokens ||
-      0,
-    completion:
-      payload.completionTokens ||
-      payload.completion_tokens ||
-      payload.outputTokens ||
-      payload.output_tokens ||
-      0
-  };
 }
 
 export class PrismaAdapter implements MonitoringStore {
@@ -225,7 +186,7 @@ export class PrismaAdapter implements MonitoringStore {
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
     for (const event of successEvents) {
-      const tokens = extractTokensFromPayload(event.payload);
+      const tokens = extractTokenUsage(event.payload);
       totalPromptTokens += tokens.prompt;
       totalCompletionTokens += tokens.completion;
     }

@@ -81,6 +81,9 @@ export interface AISpanAttributes {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  // Cache/reasoning usage (forward-compatible AI SDK attributes - not yet
+  cachedInputTokens?: number;
+  reasoningTokens?: number;
 
   // Timing (streaming)
   msToFirstChunk?: number;
@@ -99,6 +102,9 @@ export interface AISpanAttributes {
   genAiResponseModel?: string;
   genAiInputTokens?: number;
   genAiOutputTokens?: number;
+  genAiCacheReadInputTokens?: number;
+  genAiCacheCreationInputTokens?: number;
+  genAiReasoningOutputTokens?: number;
 
   // Custom metadata
   metadata?: Record<string, unknown>;

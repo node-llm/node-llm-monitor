@@ -269,6 +269,34 @@ describe("PrismaAdapter", () => {
       expect(result.items[1]!.status).toBe("error");
     });
 
+    it("should include cache/reasoning/image token counts on trace summaries", async () => {
+      const events = [
+        createEvent({
+          eventType: "request.end",
+          payload: {
+            usage: {
+              input_tokens: 100,
+              output_tokens: 50,
+              cached_tokens: 80,
+              cache_creation_tokens: 20,
+              reasoning_tokens: 15,
+              image_tokens: 5
+            }
+          }
+        })
+      ];
+
+      mockPrisma.monitoring_events.findMany.mockResolvedValue(events);
+      mockPrisma.monitoring_events.count.mockResolvedValue(1);
+
+      const result = await adapter.listTraces();
+
+      expect(result.items[0]!.cachedTokens).toBe(80);
+      expect(result.items[0]!.cacheCreationTokens).toBe(20);
+      expect(result.items[0]!.reasoningTokens).toBe(15);
+      expect(result.items[0]!.imageTokens).toBe(5);
+    });
+
     it("should use default pagination values", async () => {
       mockPrisma.monitoring_events.findMany.mockResolvedValue([]);
       mockPrisma.monitoring_events.count.mockResolvedValue(0);

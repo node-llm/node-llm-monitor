@@ -137,6 +137,9 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
     // Calculate token counts (prefer AI SDK attributes, fallback to GenAI conventions)
     const promptTokens = attrs.promptTokens ?? attrs.genAiInputTokens ?? 0;
     const completionTokens = attrs.completionTokens ?? attrs.genAiOutputTokens ?? 0;
+    const cachedTokens = attrs.cachedInputTokens ?? attrs.genAiCacheReadInputTokens ?? 0;
+    const cacheCreationTokens = attrs.genAiCacheCreationInputTokens ?? 0;
+    const reasoningTokens = attrs.reasoningTokens ?? attrs.genAiReasoningOutputTokens ?? 0;
 
     // Estimate cost
     const cost = estimateCost(provider, model, promptTokens, completionTokens);
@@ -159,7 +162,10 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       usage: {
         promptTokens,
         completionTokens,
-        totalTokens: promptTokens + completionTokens
+        totalTokens: promptTokens + completionTokens,
+        ...(cachedTokens > 0 && { cachedTokens }),
+        ...(cacheCreationTokens > 0 && { cacheCreationTokens }),
+        ...(reasoningTokens > 0 && { reasoningTokens })
       },
       // Streaming metrics
       ...(attrs.msToFirstChunk !== undefined && {

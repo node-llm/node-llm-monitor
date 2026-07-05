@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2026-07-04
+
+### Features
+
+- **Extended Token Accounting**: Extract and store cache, cache-creation, reasoning, and image token counts (previously only prompt/completion totals were tracked).
+  - Normalizes naming across the Vercel AI SDK, OpenAI, Anthropic/OTel GenAI semantic conventions, and NodeLLM's own usage shape.
+  - Surfaced in `PrismaAdapter`, trace filtering, and time-series aggregation.
+
 ## [0.2.0] - 2026-02-02
 
 ### Features
@@ -29,4 +37,3 @@ All notable changes to this project will be documented in this file.
 - **Middleware Integration**: Native integration with NodeLLM's middleware stack for zero-overhead tracking.
 - **Content Scrubbing**: Integrated PII scrubbers and metadata enrichment utilities.
 - **Lazy Validation**: Smart adapter initialization that supports modern frameworks like Next.js and Fastify.
-

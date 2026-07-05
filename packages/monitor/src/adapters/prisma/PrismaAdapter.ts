@@ -206,11 +206,14 @@ export class PrismaAdapter implements MonitoringStore {
 
   async getMetrics(options: { from?: Date; to?: Date } = {}): Promise<MetricsData> {
     this.ensureValidated();
-    const timeFilter: any = {};
-    if (options.from) timeFilter.gte = options.from;
+    // Default to the last 24h (matching MemoryAdapter/FileAdapter) so the
+    // time-series query stays bounded instead of scanning the whole table.
+    const timeFilter: any = {
+      gte: options.from ?? new Date(Date.now() - 24 * 60 * 60 * 1000)
+    };
     if (options.to) timeFilter.lte = options.to;
 
-    const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
+    const where = { time: timeFilter };
 
     const [totals, events] = await Promise.all([
       this.getStats(options),

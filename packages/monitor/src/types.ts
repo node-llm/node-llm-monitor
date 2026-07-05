@@ -155,6 +155,13 @@ export interface MonitorOptions {
    * When captureContent is true, this controls how sensitive data is handled.
    */
   scrubbing?: ContentScrubbingOptions;
+  /**
+   * Whether to collect per-request CPU time and heap allocation metrics.
+   * Collecting them calls process.memoryUsage() twice per request, which is
+   * a comparatively slow syscall on some platforms. Set to false to skip
+   * resource metrics on latency-sensitive paths. Default: true.
+   */
+  resourceMetrics?: boolean;
   onError?: (error: Error, event: MonitoringEvent) => void;
 }
 

@@ -1,4 +1,4 @@
-import type { MonitoringEvent, TraceFilters, TraceSummary } from "../types.js";
+import type { MonitoringEvent, MonitoringStats, TraceFilters, TraceSummary } from "../types.js";
 import { extractTokenUsage, type ExtractedTokenUsage } from "./tokenExtraction.js";
 
 /**
@@ -7,11 +7,23 @@ import { extractTokenUsage, type ExtractedTokenUsage } from "./tokenExtraction.j
 type FilterPredicate = (event: MonitoringEvent) => boolean;
 
 /**
+ * Memoizes extraction per event object: stats, provider stats, and time-series
+ * aggregation all need the same counts, and the in-memory adapters reuse the
+ * same event objects across queries. WeakMap keys don't keep evicted events alive.
+ */
+const tokenCache = new WeakMap<MonitoringEvent, ExtractedTokenUsage>();
+
+/**
  * Extract token counts from an event's payload. Handles multiple naming
  * conventions from different providers/SDKs (see tokenExtraction.ts).
  */
 export function extractTokens(event: MonitoringEvent): ExtractedTokenUsage {
-  return extractTokenUsage(event.payload);
+  let tokens = tokenCache.get(event);
+  if (!tokens) {
+    tokens = extractTokenUsage(event.payload);
+    tokenCache.set(event, tokens);
+  }
+  return tokens;
 }
 
 /**
@@ -109,9 +121,70 @@ export function filterTraces(
 
 /**
  * Sorts events by time in descending order (most recent first).
+ * Timestamps are computed once per event rather than in the comparator.
  */
 export function sortByTimeDesc(events: MonitoringEvent[]): MonitoringEvent[] {
-  return [...events].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  return events
+    .map((event) => ({ event, timestamp: new Date(event.time).getTime() }))
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .map(({ event }) => event);
+}
+
+/**
+ * Computes aggregate stats over events in a single pass.
+ * Shared by the in-memory adapters (MemoryAdapter, FileAdapter).
+ */
+export function computeStats(
+  events: MonitoringEvent[],
+  options?: { from?: Date; to?: Date }
+): MonitoringStats {
+  const fromTime = options?.from?.getTime();
+  const toTime = options?.to?.getTime();
+
+  let endCount = 0;
+  let errorCount = 0;
+  let totalCost = 0;
+  let totalDuration = 0;
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalSelfCorrections = 0;
+
+  for (const event of events) {
+    if (event.eventType !== "request.end" && event.eventType !== "request.error") continue;
+
+    if (fromTime !== undefined || toTime !== undefined) {
+      const time = new Date(event.time).getTime();
+      if (fromTime !== undefined && time < fromTime) continue;
+      if (toTime !== undefined && time > toTime) continue;
+    }
+
+    if (event.eventType === "request.error") {
+      errorCount++;
+      continue;
+    }
+
+    endCount++;
+    totalCost += event.cost || 0;
+    totalDuration += event.duration || 0;
+    const tokens = extractTokens(event);
+    totalPromptTokens += tokens.prompt;
+    totalCompletionTokens += tokens.completion;
+    if ((event.correctionRounds ?? 0) > 0) totalSelfCorrections++;
+  }
+
+  const totalRequests = endCount + errorCount;
+  const totalTokens = totalPromptTokens + totalCompletionTokens;
+
+  return {
+    totalRequests,
+    totalCost,
+    avgDuration: endCount > 0 ? totalDuration / endCount : 0,
+    errorRate: totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0,
+    totalPromptTokens,
+    totalCompletionTokens,
+    avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
+    totalSelfCorrections
+  };
 }
 
 /**

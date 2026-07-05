@@ -1,5 +1,4 @@
-import { appendFile, readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { appendFile, readFile, stat } from "node:fs/promises";
 import type {
   MonitoringStore,
   MonitoringEvent,
@@ -14,8 +13,14 @@ import {
   sortByTimeDesc,
   paginate,
   eventToTraceSummary,
-  extractTokens
+  computeStats
 } from "../filterTraces.js";
+
+interface EventCache {
+  events: MonitoringEvent[];
+  mtimeMs: number;
+  size: number;
+}
 
 /**
  * File-based store for local persistence without a database.
@@ -23,58 +28,41 @@ import {
  */
 export class FileAdapter implements MonitoringStore {
   private builder = new TimeSeriesBuilder();
+  private cache: EventCache | null = null;
 
   constructor(private readonly filePath: string = "monitoring.log") {}
 
   async saveEvent(event: MonitoringEvent): Promise<void> {
     await appendFile(this.filePath, JSON.stringify(event) + "\n");
+    // The file changed; force a re-read on the next query.
+    this.cache = null;
   }
 
   private async loadEvents(): Promise<MonitoringEvent[]> {
-    if (!existsSync(this.filePath)) return [];
+    let stats;
+    try {
+      stats = await stat(this.filePath);
+    } catch {
+      return [];
+    }
+
+    if (this.cache && this.cache.mtimeMs === stats.mtimeMs && this.cache.size === stats.size) {
+      return this.cache.events;
+    }
+
     const content = await readFile(this.filePath, "utf-8");
-    return content
+    const events = content
       .split("\n")
       .filter((line) => line.trim())
       .map((line) => JSON.parse(line));
+
+    this.cache = { events, mtimeMs: stats.mtimeMs, size: stats.size };
+    return events;
   }
 
   async getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats> {
     const events = await this.loadEvents();
-    const from = options?.from;
-    const to = options?.to;
-    let filtered = events;
-
-    if (from) filtered = filtered.filter((e) => new Date(e.time) >= from);
-    if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
-
-    const requestEnds = filtered.filter((e) => e.eventType === "request.end");
-    const requestErrors = filtered.filter((e) => e.eventType === "request.error");
-    const totalRequests = requestEnds.length + requestErrors.length;
-
-    // Aggregate token counts
-    let totalPromptTokens = 0;
-    let totalCompletionTokens = 0;
-    for (const event of requestEnds) {
-      const tokens = extractTokens(event);
-      totalPromptTokens += tokens.prompt;
-      totalCompletionTokens += tokens.completion;
-    }
-    const totalTokens = totalPromptTokens + totalCompletionTokens;
-
-    return {
-      totalRequests,
-      totalCost: requestEnds.reduce((sum, e) => sum + (e.cost || 0), 0),
-      avgDuration:
-        totalRequests > 0
-          ? requestEnds.reduce((sum, e) => sum + (e.duration || 0), 0) /
-            Math.max(requestEnds.length, 1)
-          : 0,
-      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
-      totalPromptTokens,
-      totalCompletionTokens,
-      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0
-    };
+    return computeStats(events, options);
   }
 
   async getMetrics(options?: { from?: Date; to?: Date }): Promise<MetricsData> {
@@ -85,7 +73,7 @@ export class FileAdapter implements MonitoringStore {
     if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
 
     return {
-      totals: await this.getStats(options),
+      totals: computeStats(events, options),
       byProvider: this.builder.buildProviderStats(filtered),
       timeSeries: this.builder.build(filtered)
     };

@@ -12,8 +12,20 @@ import {
   sortByTimeDesc,
   paginate,
   eventToTraceSummary,
-  extractTokens
+  computeStats
 } from "../filterTraces.js";
+
+export interface MemoryAdapterOptions {
+  /**
+   * Maximum number of events kept in memory. Oldest events are dropped
+   * once the limit is exceeded, preventing unbounded growth in
+   * long-running processes. Default: 10000.
+   */
+  maxEvents?: number;
+}
+
+/** Events are trimmed in batches to avoid an O(n) copy on every save. */
+const TRIM_BATCH = 500;
 
 /**
  * High-performance In-Memory store for development and testing.
@@ -21,47 +33,21 @@ import {
 export class MemoryAdapter implements MonitoringStore {
   private events: MonitoringEvent[] = [];
   private builder = new TimeSeriesBuilder();
+  private readonly maxEvents: number;
+
+  constructor(options: MemoryAdapterOptions = {}) {
+    this.maxEvents = options.maxEvents ?? 10000;
+  }
 
   async saveEvent(event: MonitoringEvent): Promise<void> {
     this.events.push(event);
+    if (this.events.length >= this.maxEvents + TRIM_BATCH) {
+      this.events = this.events.slice(-this.maxEvents);
+    }
   }
 
   async getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats> {
-    const from = options?.from;
-    const to = options?.to;
-    let filtered = this.events;
-
-    if (from) filtered = filtered.filter((e) => new Date(e.time) >= from);
-    if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
-
-    const requestEnds = filtered.filter((e) => e.eventType === "request.end");
-    const requestErrors = filtered.filter((e) => e.eventType === "request.error");
-    const totalRequests = requestEnds.length + requestErrors.length;
-
-    // Aggregate token counts
-    let totalPromptTokens = 0;
-    let totalCompletionTokens = 0;
-    for (const event of requestEnds) {
-      const tokens = extractTokens(event);
-      totalPromptTokens += tokens.prompt;
-      totalCompletionTokens += tokens.completion;
-    }
-    const totalTokens = totalPromptTokens + totalCompletionTokens;
-
-    return {
-      totalRequests,
-      totalCost: requestEnds.reduce((sum, e) => sum + (e.cost || 0), 0),
-      avgDuration:
-        totalRequests > 0
-          ? requestEnds.reduce((sum, e) => sum + (e.duration || 0), 0) /
-            Math.max(requestEnds.length, 1)
-          : 0,
-      errorRate: totalRequests > 0 ? (requestErrors.length / totalRequests) * 100 : 0,
-      totalPromptTokens,
-      totalCompletionTokens,
-      avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
-      totalSelfCorrections: requestEnds.filter((e) => (e.correctionRounds ?? 0) > 0).length
-    };
+    return computeStats(this.events, options);
   }
 
   async getMetrics(options?: { from?: Date; to?: Date }): Promise<MetricsData> {
@@ -72,7 +58,7 @@ export class MemoryAdapter implements MonitoringStore {
     if (to) filtered = filtered.filter((e) => new Date(e.time) <= to);
 
     return {
-      totals: await this.getStats(options),
+      totals: computeStats(this.events, options),
       byProvider: this.builder.buildProviderStats(filtered),
       timeSeries: this.builder.build(filtered)
     };

@@ -44,6 +44,7 @@ const SECRET_PATTERNS = [
  */
 export class ContentScrubber {
   private readonly options: Required<ContentScrubbingOptions>;
+  private readonly excludeFieldSet: Set<string>;
   private readonly allPatterns: Array<{ pattern: RegExp; replacement: string; name: string }>;
 
   constructor(options: ContentScrubbingOptions = {}) {
@@ -54,6 +55,7 @@ export class ContentScrubber {
       excludeFields: options.excludeFields ?? [],
       maskWith: options.maskWith ?? "[REDACTED]"
     };
+    this.excludeFieldSet = new Set(this.options.excludeFields);
 
     // Build combined pattern list
     this.allPatterns = [];
@@ -122,7 +124,7 @@ export class ContentScrubber {
 
     for (const [key, value] of Object.entries(obj)) {
       // Skip excluded fields
-      if (this.options.excludeFields.includes(key)) {
+      if (this.excludeFieldSet.has(key)) {
         scrubbed[key] = this.options.maskWith;
         continue;
       }

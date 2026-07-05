@@ -1,7 +1,6 @@
 import type { MonitoringStore, CorsConfig } from "../types.js";
 import { PrismaAdapter } from "../adapters/prisma/PrismaAdapter.js";
-import { existsSync, statSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +21,14 @@ export interface MonitorRequest {
 export interface MonitorResponse {
   writeHead(code: number, headers?: Record<string, string>): void;
   end(body?: string | Buffer): void;
+}
+
+async function isFile(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 // MIME types for static files
@@ -276,11 +283,11 @@ export class MonitorDashboard {
     const sanitizedPath = filePath.replace(/\.\./g, "").replace(/^\//, "");
     const fullPath = join(this.staticDir, sanitizedPath);
 
-    // Check if file exists
-    if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+    // Check if file exists (async to avoid blocking the event loop)
+    if (!(await isFile(fullPath))) {
       // For SPA routing, serve index.html for non-asset routes
       const indexPath = join(this.staticDir, "index.html");
-      if (existsSync(indexPath)) {
+      if (await isFile(indexPath)) {
         return this.serveFile(res, indexPath, ".html");
       }
 
@@ -493,19 +500,13 @@ export function createMonitoringRouter(store: any, options?: MonitorDashboardOpt
 
       await dashboard.handleRequest(mockReq, mockRes);
 
-      // Convert Buffer to ArrayBuffer for Web API Response compatibility
-      let body: string | ArrayBuffer;
-      if (mockRes._body instanceof Buffer) {
-        // Create a proper ArrayBuffer from Buffer
-        const arrayBuffer = new ArrayBuffer(mockRes._body.length);
-        const view = new Uint8Array(arrayBuffer);
-        for (let i = 0; i < mockRes._body.length; i++) {
-          view[i] = mockRes._body[i]!;
-        }
-        body = arrayBuffer;
-      } else {
-        body = mockRes._body as string;
-      }
+      // Convert Buffer to Uint8Array for Web API Response compatibility
+      // (native copy instead of a byte-by-byte JS loop; the copy is backed
+      // by a fresh ArrayBuffer, which BodyInit requires)
+      const body: string | Uint8Array<ArrayBuffer> =
+        mockRes._body instanceof Buffer
+          ? (new Uint8Array(mockRes._body) as Uint8Array<ArrayBuffer>)
+          : (mockRes._body as string);
 
       return new Response(body, {
         status: mockRes._statusCode,

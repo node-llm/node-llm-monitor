@@ -28,6 +28,7 @@ export class Monitor {
 
   private readonly store: MonitoringStore;
   private readonly captureContent: boolean;
+  private readonly resourceMetrics: boolean;
   private readonly scrubber: ContentScrubber | null;
   private readonly errorHook?: ((error: Error, event: MonitoringEvent) => void) | undefined;
 
@@ -44,6 +45,7 @@ export class Monitor {
   constructor(options: MonitorOptions) {
     this.store = options.store;
     this.captureContent = options.captureContent ?? false;
+    this.resourceMetrics = options.resourceMetrics ?? true;
     this.errorHook = options.onError;
 
     // Initialize scrubber if content capture is enabled
@@ -192,21 +194,28 @@ export class Monitor {
   }
 
   private initializeMetrics(ctx: MinimalContext): void {
-    ctx.state._monitor = {
-      startTime: Date.now(),
-      cpuStart: process.cpuUsage(),
-      memStart: process.memoryUsage().heapUsed
-    };
+    ctx.state._monitor = this.resourceMetrics
+      ? {
+          startTime: Date.now(),
+          cpuStart: process.cpuUsage(),
+          memStart: process.memoryUsage().heapUsed
+        }
+      : { startTime: Date.now() };
   }
 
   private calculateMetrics(ctx: MinimalContext, usage?: any): Partial<MonitoringEvent> {
     const state = ctx.state._monitor;
     if (!state) return {};
 
+    const duration = Date.now() - state.startTime;
+
+    if (!this.resourceMetrics || state.cpuStart === undefined) {
+      return { duration, cost: usage?.cost };
+    }
+
     const cpuUsage = process.cpuUsage(state.cpuStart);
     const cpuTime = (cpuUsage.user + cpuUsage.system) / 1000; // ms
     const allocations = process.memoryUsage().heapUsed - (state.memStart || 0);
-    const duration = Date.now() - state.startTime;
 
     return {
       duration,

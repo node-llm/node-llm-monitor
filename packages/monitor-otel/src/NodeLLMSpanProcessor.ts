@@ -62,7 +62,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
   private readonly store: MonitoringStore;
   private readonly options: Required<Pick<NodeLLMSpanProcessorOptions, "captureContent">> &
     NodeLLMSpanProcessorOptions;
-  private pendingWrites: Promise<void>[] = [];
+  private pendingWrites = new Set<Promise<void>>();
 
   constructor(store: MonitoringStore, options: NodeLLMSpanProcessorOptions = {}) {
     this.store = store;
@@ -109,7 +109,10 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       }
     });
 
-    this.pendingWrites.push(writePromise);
+    // Track until settled so forceFlush can await in-flight writes without
+    // the set growing unboundedly in long-running processes.
+    this.pendingWrites.add(writePromise);
+    void writePromise.finally(() => this.pendingWrites.delete(writePromise));
   }
 
   /**
@@ -241,7 +244,7 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
    */
   async forceFlush(): Promise<void> {
     await Promise.all(this.pendingWrites);
-    this.pendingWrites = [];
+    this.pendingWrites.clear();
   }
 
   /**

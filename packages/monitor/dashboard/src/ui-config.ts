@@ -34,6 +34,11 @@ export interface MonitorUiConfig {
    * to the dashboard's own origin only, so no other site can receive them.
    */
   embedded?: boolean;
+  /**
+   * Which tag keys to offer as filters, in order, with labels, such as
+   * [{ key: "project", label: "Project" }]. Default: every tag key seen.
+   */
+  tagFilters?: Array<{ key: string; label: string }>;
 }
 
 /** The message an embedded dashboard posts to its parent with its height. */

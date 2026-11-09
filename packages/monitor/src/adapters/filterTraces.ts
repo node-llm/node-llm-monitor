@@ -1,4 +1,10 @@
-import type { MonitoringEvent, MonitoringStats, TraceFilters, TraceSummary } from "../types.js";
+import type {
+  MonitoringEvent,
+  MonitoringStats,
+  TagValues,
+  TraceFilters,
+  TraceSummary
+} from "../types.js";
 import { extractTokenUsage, type ExtractedTokenUsage } from "./tokenExtraction.js";
 
 /**
@@ -77,6 +83,11 @@ function buildFilterPredicates(options: TraceFilters): FilterPredicate[] {
     predicates.push((e) => e.eventType === eventType);
   }
 
+  if (options.tags && Object.keys(options.tags).length > 0) {
+    const tags = options.tags;
+    predicates.push((e) => hasTags(e, tags));
+  }
+
   // Date range filters
   if (options.from) {
     const fromTime = options.from.getTime();
@@ -117,6 +128,41 @@ export function filterTraces(
 
   // Apply all predicates (AND logic)
   return terminalEvents.filter((event) => predicates.every((predicate) => predicate(event)));
+}
+
+/** Whether an event carries every one of the given tags. */
+export function hasTags(event: MonitoringEvent, tags?: Record<string, string>): boolean {
+  if (!tags) return true;
+  return Object.entries(tags).every(([key, value]) => event.tags?.[key] === value);
+}
+
+/** Only the events carrying every one of the given tags. */
+export function withTags(
+  events: MonitoringEvent[],
+  tags?: Record<string, string>
+): MonitoringEvent[] {
+  return tags && Object.keys(tags).length > 0 ? events.filter((e) => hasTags(e, tags)) : events;
+}
+
+/** Each tag key with its values, sorted, from events in a time range. */
+export function collectTags(
+  events: MonitoringEvent[],
+  options: { from?: Date; to?: Date } = {}
+): TagValues {
+  const fromTime = options.from?.getTime();
+  const toTime = options.to?.getTime();
+  const found = new Map<string, Set<string>>();
+  for (const event of events) {
+    if (!event.tags) continue;
+    const time = new Date(event.time).getTime();
+    if ((fromTime !== undefined && time < fromTime) || (toTime !== undefined && time > toTime))
+      continue;
+    for (const [key, value] of Object.entries(event.tags)) {
+      if (!found.has(key)) found.set(key, new Set());
+      found.get(key)!.add(value);
+    }
+  }
+  return Object.fromEntries([...found].map(([key, values]) => [key, [...values].sort()]));
 }
 
 /**
@@ -220,6 +266,7 @@ export function eventToTraceSummary(event: MonitoringEvent): TraceSummary {
   if (tokens.reasoning > 0) summary.reasoningTokens = tokens.reasoning;
   if (tokens.image > 0) summary.imageTokens = tokens.image;
   if (event.correctionRounds !== undefined) summary.correctionRounds = event.correctionRounds;
+  if (event.tags) summary.tags = event.tags;
 
   return summary;
 }

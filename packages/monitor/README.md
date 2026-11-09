@@ -40,6 +40,8 @@ model monitoring_events {
   createdAt      DateTime @default(now())
   provider       String
   model          String
+  correctionRounds Int?
+  tags           Json?    // Plain labels for filtering, such as { project: "Checkout" }
 }
 ```
 
@@ -49,7 +51,7 @@ Then run the migration to create the table:
 npx prisma migrate dev --name add_monitoring_events
 ```
 
-_Note: For non-Prisma users, a raw SQL migration is available at `migrations/001_create_monitoring_events.sql`._
+_Note: For non-Prisma users, raw SQL migrations are in `migrations/`: `001` creates the table, `002` adds `correctionRounds` and `003` adds `tags`._
 
 ### 2. Integration
 

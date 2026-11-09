@@ -23,6 +23,17 @@ export interface MinimalContext {
   transactionId?: string;
 }
 
+/** Tags as plain strings, short enough to filter and show; undefined when there are none. */
+export function cleanTags(tags: unknown): Record<string, string> | undefined {
+  if (!tags || typeof tags !== "object") return undefined;
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(tags as Record<string, unknown>)) {
+    if (value === undefined || value === null || value === "") continue;
+    clean[String(key).slice(0, 64)] = String(value).slice(0, 200);
+  }
+  return Object.keys(clean).length ? clean : undefined;
+}
+
 export class Monitor {
   public readonly name = "NodeLLMMonitor";
 
@@ -31,6 +42,7 @@ export class Monitor {
   private readonly resourceMetrics: boolean;
   private readonly scrubber: ContentScrubber | null;
   private readonly errorHook?: ((error: Error, event: MonitoringEvent) => void) | undefined;
+  private readonly tags: Record<string, string> | undefined;
 
   /**
    * Seamless creation with In-Memory store (Development/Testing)
@@ -43,6 +55,7 @@ export class Monitor {
   }
 
   constructor(options: MonitorOptions) {
+    this.tags = cleanTags(options.tags);
     this.store = options.store;
     this.captureContent = options.captureContent ?? false;
     this.resourceMetrics = options.resourceMetrics ?? true;
@@ -199,6 +212,8 @@ export class Monitor {
       payload: payload || {},
       ...metrics
     };
+    const tags = cleanTags({ ...this.tags, ...ctx.options?.monitorTags });
+    if (tags) event.tags = tags;
 
     try {
       await this.store.saveEvent(event);

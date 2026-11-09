@@ -3,7 +3,8 @@ import type {
   PaginatedTraces,
   MonitoringEvent,
   MetricsData,
-  TraceFilters
+  TraceFilters,
+  TagValues
 } from "../types";
 
 const API_BASE = "./api";
@@ -56,13 +57,22 @@ class ApiClient {
 
 const client = new ApiClient();
 
+// Tag filters go in the query as tag.<key>=<value>.
+function appendTags(params: URLSearchParams, tags?: Record<string, string>) {
+  for (const [key, value] of Object.entries(tags ?? {})) params.set(`tag.${key}`, value);
+}
+
 export const api = {
   /**
    * Get monitoring stats (total requests, cost, avg duration, error rate)
    */
-  async getStats(options?: { from?: Date }): Promise<MonitoringStats> {
+  async getStats(options?: {
+    from?: Date;
+    tags?: Record<string, string>;
+  }): Promise<MonitoringStats> {
     const params = new URLSearchParams();
     if (options?.from) params.set("from", options.from.toISOString());
+    appendTags(params, options?.tags);
     const query = params.toString();
     return client.fetchJson<MonitoringStats>(
       `${API_BASE}/stats${query ? `?${query}` : ""}`,
@@ -73,9 +83,10 @@ export const api = {
   /**
    * Get full metrics data including time series and provider breakdown
    */
-  async getMetrics(options?: { from?: Date }): Promise<MetricsData> {
+  async getMetrics(options?: { from?: Date; tags?: Record<string, string> }): Promise<MetricsData> {
     const params = new URLSearchParams();
     if (options?.from) params.set("from", options.from.toISOString());
+    appendTags(params, options?.tags);
     const query = params.toString();
     return client.fetchJson<MetricsData>(
       `${API_BASE}/metrics${query ? `?${query}` : ""}`,
@@ -102,12 +113,23 @@ export const api = {
     if (options.provider) params.set("provider", options.provider);
     if (options.minCost !== undefined) params.set("minCost", options.minCost.toString());
     if (options.minLatency !== undefined) params.set("minLatency", options.minLatency.toString());
+    appendTags(params, options.tags);
 
     const query = params.toString();
     return client.fetchJson<PaginatedTraces>(
       `${API_BASE}/traces${query ? `?${query}` : ""}`,
       "traces"
     );
+  },
+
+  /**
+   * Get the tag keys and values seen, for the filter bar
+   */
+  async getTags(options?: { from?: Date }): Promise<TagValues> {
+    const params = new URLSearchParams();
+    if (options?.from) params.set("from", options.from.toISOString());
+    const query = params.toString();
+    return client.fetchJson<TagValues>(`${API_BASE}/tags${query ? `?${query}` : ""}`, "tags");
   },
 
   /**

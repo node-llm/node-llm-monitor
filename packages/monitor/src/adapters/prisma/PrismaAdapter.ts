@@ -5,10 +5,25 @@ import type {
   TraceSummary,
   PaginatedTraces,
   MetricsData,
-  TraceFilters
+  TraceFilters,
+  StatsFilters,
+  TagValues
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 import { extractTokenUsage } from "../tokenExtraction.js";
+
+/**
+ * A filter on the JSON tags column: every given tag must match. Needs migration 003 (tags column);
+ * stores that never filter or save tags work without it.
+ */
+function tagsWhere(tags?: Record<string, string>): Record<string, any> {
+  const entries = Object.entries(tags ?? {});
+  if (entries.length === 0) return {};
+  return { AND: entries.map(([key, value]) => ({ tags: { path: [key], equals: value } })) };
+}
+
+/** How many recent calls listTags reads to find tag values. */
+const TAG_SCAN_LIMIT = 5000;
 
 /**
  * Builds Prisma WHERE clause from trace filters.
@@ -61,7 +76,7 @@ function buildPrismaWhereClause(options: TraceFilters): Record<string, any> {
     if (options.to) where.time.lte = options.to;
   }
 
-  return where;
+  return { ...where, ...tagsWhere(options.tags) };
 }
 
 /**
@@ -135,9 +150,36 @@ export class PrismaAdapter implements MonitoringStore {
         createdAt: event.createdAt,
         provider: event.provider,
         model: event.model,
-        correctionRounds: event.correctionRounds
+        correctionRounds: event.correctionRounds,
+        // Only when there are tags, so tables from before migration 003 keep working.
+        ...(event.tags ? { tags: event.tags } : {})
       }
     });
+  }
+
+  async listTags(options: { from?: Date; to?: Date } = {}): Promise<TagValues> {
+    this.ensureValidated();
+    const time: any = {};
+    if (options.from) time.gte = options.from;
+    if (options.to) time.lte = options.to;
+    const rows: Array<{ tags: Record<string, string> | null }> = await this.model.findMany({
+      where: {
+        ...(Object.keys(time).length ? { time } : {}),
+        eventType: "request.end",
+        NOT: { tags: { equals: null } }
+      },
+      select: { tags: true },
+      orderBy: { time: "desc" },
+      take: TAG_SCAN_LIMIT
+    });
+    const found = new Map<string, Set<string>>();
+    for (const { tags } of rows) {
+      for (const [key, value] of Object.entries(tags ?? {})) {
+        if (!found.has(key)) found.set(key, new Set());
+        found.get(key)!.add(String(value));
+      }
+    }
+    return Object.fromEntries([...found].map(([key, values]) => [key, [...values].sort()]));
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {
@@ -148,13 +190,16 @@ export class PrismaAdapter implements MonitoringStore {
     });
   }
 
-  async getStats(options: { from?: Date; to?: Date } = {}): Promise<MonitoringStats> {
+  async getStats(options: StatsFilters = {}): Promise<MonitoringStats> {
     this.ensureValidated();
     const timeFilter: any = {};
     if (options.from) timeFilter.gte = options.from;
     if (options.to) timeFilter.lte = options.to;
 
-    const where = Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {};
+    const where = {
+      ...(Object.keys(timeFilter).length > 0 ? { time: timeFilter } : {}),
+      ...tagsWhere(options.tags)
+    };
 
     // Fetch events to calculate token counts (stored in JSON payload)
     const [
@@ -204,7 +249,7 @@ export class PrismaAdapter implements MonitoringStore {
     };
   }
 
-  async getMetrics(options: { from?: Date; to?: Date } = {}): Promise<MetricsData> {
+  async getMetrics(options: StatsFilters = {}): Promise<MetricsData> {
     this.ensureValidated();
     // Default to the last 24h (matching MemoryAdapter/FileAdapter) so the
     // time-series query stays bounded instead of scanning the whole table.
@@ -213,7 +258,7 @@ export class PrismaAdapter implements MonitoringStore {
     };
     if (options.to) timeFilter.lte = options.to;
 
-    const where = { time: timeFilter };
+    const where = { time: timeFilter, ...tagsWhere(options.tags) };
 
     const [totals, events] = await Promise.all([
       this.getStats(options),

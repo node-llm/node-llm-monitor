@@ -156,6 +156,8 @@ Inspect the full lifecycle of every AI request:
 
 **Fit it into your app:** brand the dashboard with your name, logo and colors, or show it inside your own page with embedded mode. See [docs/EMBEDDING.md](docs/EMBEDDING.md).
 
+**Filter by tags:** label calls with a project, feature or environment and filter every view by them. See [docs/TAGS.md](docs/TAGS.md).
+
 ### 🛡️ Privacy & Scrubbing
 
 Production-safe by default:

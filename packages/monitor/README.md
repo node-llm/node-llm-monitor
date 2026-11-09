@@ -185,7 +185,7 @@ const dashboard = createMonitorMiddleware(store, {
 });
 ```
 
-**Inside your own page.** With `embedded: true`, the dashboard drops its header and footer and its page background, and posts its height to the parent page as `{ type: "nodellm-monitor:height", height }`, to its own origin only. Show it in a same-origin `<iframe>` and size the frame from that message, checking `event.origin` is your own. Allow the dashboard page to be framed by your own site only (`Content-Security-Policy: frame-ancestors 'self'`); no other page needs to change.
+**Inside your own page.** See [Fit the dashboard into your app](../../docs/EMBEDDING.md) for embedded mode, the security checklist and a worked example. In short, with `embedded: true`, the dashboard drops its header and footer and its page background, and posts its height to the parent page as `{ type: "nodellm-monitor:height", height }`, to its own origin only. Show it in a same-origin `<iframe>` and size the frame from that message, checking `event.origin` is your own. Allow the dashboard page to be framed by your own site only (`Content-Security-Policy: frame-ancestors 'self'`); no other page needs to change.
 
 If your app serves the static build in `dashboard/build` itself (for example from a Rails or Django app, with its own API answering `./api/*`), set the same object as `window.__MONITOR_UI__` in a script before the dashboard's script. `injectDashboardConfig(html, { ui })` from `@node-llm/monitor/ui` does this safely. With a Content Security Policy, give that script your nonce.
 

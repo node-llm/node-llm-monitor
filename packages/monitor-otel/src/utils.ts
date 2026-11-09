@@ -40,6 +40,15 @@ export function isAISpan(span: OTelReadableSpan): boolean {
 }
 
 /**
+ * Check if a span was created by NodeLLM's OpenTelemetry middleware
+ * (`OpenTelemetry(otel)` from @node-llm/core), which tags each span with
+ * `node_llm.request_id`.
+ */
+export function isNodeLLMSpan(span: OTelReadableSpan): boolean {
+  return span.attributes?.["node_llm.request_id"] !== undefined;
+}
+
+/**
  * Check if this is a top-level operation span (not a .doGenerate/.doStream child)
  */
 export function isTopLevelAISpan(span: OTelReadableSpan): boolean {

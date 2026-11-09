@@ -97,6 +97,37 @@ describe("NodeLLMSpanProcessor", () => {
     expect(event.payload.usage.reasoningTokens).toBe(15);
   });
 
+  it("should skip spans created by NodeLLM's OpenTelemetry middleware", async () => {
+    const span = createMockSpan("chat gpt-4o", {
+      attributes: {
+        "gen_ai.system": "openai",
+        "gen_ai.request.model": "gpt-4o",
+        "node_llm.request_id": "req-1"
+      }
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(mockStore.saveEvent).not.toHaveBeenCalled();
+  });
+
+  it("should record NodeLLM spans when includeNodeLLMSpans is set", async () => {
+    processor = new NodeLLMSpanProcessor(mockStore, { includeNodeLLMSpans: true });
+    const span = createMockSpan("chat gpt-4o", {
+      attributes: {
+        "gen_ai.system": "openai",
+        "gen_ai.request.model": "gpt-4o",
+        "node_llm.request_id": "req-1"
+      }
+    });
+
+    processor.onEnd(span);
+    await processor.forceFlush();
+
+    expect(mockStore.saveEvent).toHaveBeenCalled();
+  });
+
   it("should ignore non-AI spans", async () => {
     const span = createMockSpan("http.get");
 

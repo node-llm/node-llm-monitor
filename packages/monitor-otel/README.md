@@ -59,9 +59,16 @@ The spans emitted by `ai` will be automatically intercepted, processed, and save
 new NodeLLMSpanProcessor(store, {
   captureContent: true, // Set to false to hide prompts/responses from logs
   filter: (span) => span.name.includes("my-app"), // Custom span filtering
+  includeNodeLLMSpans: false, // See "NodeLLM's own spans" below
   onError: (err, span) => console.error("Failed to process AI span", err)
 });
 ```
+
+### NodeLLM's own spans
+
+`@node-llm/core` can also create OpenTelemetry spans, with its `OpenTelemetry(otel)` middleware. The processor skips those spans by default (they carry a `node_llm.request_id` attribute), because the `Monitor` middleware already records the same calls and they would be counted twice.
+
+If NodeLLM reaches Monitor only through OpenTelemetry, without the `Monitor` middleware, set `includeNodeLLMSpans: true`.
 
 ## License
 

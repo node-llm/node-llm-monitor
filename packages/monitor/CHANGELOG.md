@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Tool arguments no longer stored without content capture.** With `captureContent: false` (the default), `tool.start` events kept the full tool call, arguments included. They now keep only the call id and tool name. With capture on, arguments are scrubbed like messages.
+- **Tool results are scrubbed.** With `captureContent: true`, tool results went to the store unscrubbed. They now pass through the PII and secret scrubber.
+- **Error stacks only with content capture.** `request.error` events kept `error.stack`, which shows file paths and code, even with capture off.
+- **The answering model is recorded.** `request.end` events now use the model and provider from the response, so a call that NodeLLM's fallbacks moved to another model is no longer filed under the requested one.
+
+### Internal
+
+- `@node-llm/monitor-otel` now type-checks cleanly; fixed a test that passed `customPatterns` outside `scrubbing`.
+
 ## [0.4.2] - 2026-07-04
 
 ### Features

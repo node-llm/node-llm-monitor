@@ -103,18 +103,24 @@ export class Monitor {
 
   async onResponse(
     ctx: MinimalContext,
-    result: { toString(): string; usage?: any; model?: string }
+    result: { toString(): string; usage?: any; model?: string; provider?: string }
   ): Promise<void> {
     const metrics = this.calculateMetrics(ctx, result.usage);
 
-    // If the result has a model (e.g., from Embedding response), use it to update context
-    // This ensures we capture the actual model used when none was explicitly specified
-    if (result.model && !ctx.model) {
-      ctx.model = result.model;
-    }
+    // Record the model that answered. It differs from the requested one when
+    // NodeLLM fell back to another model, and an embedding response may name
+    // the model when none was requested.
+    const served =
+      result.model || result.provider
+        ? {
+            ...ctx,
+            model: result.model || ctx.model,
+            provider: result.provider || ctx.provider
+          }
+        : ctx;
 
     await this.emit(
-      ctx,
+      served,
       "request.end",
       {
         result: this.captureContent ? this.scrubContent(result.toString()) : undefined,
@@ -135,20 +141,32 @@ export class Monitor {
       "request.error",
       {
         error: error.message,
-        stack: error.stack
+        // A stack shows file paths and code; keep it only when content capture is on.
+        stack: this.captureContent ? error.stack : undefined
       },
       metrics
     );
   }
 
   async onToolCallStart(ctx: MinimalContext, tool: any): Promise<void> {
-    await this.emit(ctx, "tool.start", { toolCall: tool });
+    // Tool arguments are content (they often carry user data): store them only
+    // when content capture is on, scrubbed like messages.
+    await this.emit(ctx, "tool.start", {
+      toolCall: {
+        id: tool?.id,
+        type: tool?.type,
+        function: {
+          name: tool?.function?.name,
+          arguments: this.captureContent ? this.scrubContent(tool?.function?.arguments) : undefined
+        }
+      }
+    });
   }
 
   async onToolCallEnd(ctx: MinimalContext, tool: any, result: any): Promise<void> {
     await this.emit(ctx, "tool.end", {
       toolCallId: tool.id,
-      result: this.captureContent ? result : undefined
+      result: this.captureContent ? this.scrubContent(result) : undefined
     });
   }
 

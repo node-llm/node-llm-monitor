@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NodeLLMSpanProcessor } from "../src/NodeLLMSpanProcessor.js";
-import { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
+import type { MonitoringStore, MonitoringEvent } from "@node-llm/monitor";
 
 describe("NodeLLMSpanProcessor", () => {
   let mockStore: MonitoringStore;

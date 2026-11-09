@@ -36,7 +36,7 @@ describe("createPrismaMonitor", () => {
 
       const monitor = createPrismaMonitor(mockPrisma, {
         captureContent: true,
-        customPatterns: [{ pattern: /secret/gi, name: "custom_secret" }]
+        scrubbing: { customPatterns: [{ pattern: /secret/gi, name: "custom_secret" }] }
       });
 
       expect(monitor).toBeInstanceOf(Monitor);

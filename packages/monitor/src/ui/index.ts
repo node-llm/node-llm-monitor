@@ -97,6 +97,8 @@ export interface MonitorUiOptions {
   hideLanguageSwitcher?: boolean;
   hideFooter?: boolean;
   documentTitle?: string;
+  /** Shown in the host's own page, in a same-origin frame: no header or footer, and it posts its height to the parent. */
+  embedded?: boolean;
 }
 
 /** A value as a script literal that can't close the script tag it sits in. */

@@ -21,8 +21,12 @@ export function Layout({ children }: LayoutProps) {
   const isRTL = i18n.dir() === 'rtl';
 
   return (
-    <div className="min-h-screen bg-monitor-bg dark:bg-slate-950 font-sans" dir={i18n.dir()}>
+    <div
+      className={`${uiConfig.embedded ? '' : 'min-h-screen bg-monitor-bg dark:bg-slate-950'} font-sans`}
+      dir={i18n.dir()}
+    >
       {/* Header */}
+      {!uiConfig.embedded && (
       <header className="sticky top-0 z-50 glass border-b border-monitor-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -86,14 +90,15 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
+      )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={uiConfig.embedded ? 'py-1' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
         {children}
       </main>
 
       {/* Footer */}
-      {!uiConfig.hideFooter && (
+      {!uiConfig.hideFooter && !uiConfig.embedded && (
       <footer className="border-t border-monitor-border dark:border-slate-800 mt-auto bg-white/50 dark:bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">

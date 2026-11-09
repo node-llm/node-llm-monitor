@@ -26,6 +26,13 @@ body {
   background: #f8f9fa;
 }
 
+/* Embedded in a host page: the host's background shows through, and the page is as tall as its content. */
+.monitor-embedded,
+.monitor-embedded body {
+  min-height: 0;
+  background: transparent;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

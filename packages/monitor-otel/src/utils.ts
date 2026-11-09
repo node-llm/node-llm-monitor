@@ -301,6 +301,24 @@ export function generateRequestId(span: OTelReadableSpan): string {
 }
 
 /**
+ * Tags from span attributes: `llm.tag.<key>` (for example llm.tag.project) and the Vercel AI SDK's
+ * `ai.telemetry.metadata.tag.<key>`. Plain strings only; undefined when there are none.
+ */
+export function extractTags(span: OTelReadableSpan): Record<string, string> | undefined {
+  const tags: Record<string, string> = {};
+  for (const [name, value] of Object.entries(span.attributes ?? {})) {
+    const key = name.startsWith("llm.tag.")
+      ? name.slice(8)
+      : name.startsWith("ai.telemetry.metadata.tag.")
+        ? name.slice(26)
+        : undefined;
+    if (!key || value === undefined || value === null || value === "") continue;
+    tags[key.slice(0, 64)] = String(value).slice(0, 200);
+  }
+  return Object.keys(tags).length ? tags : undefined;
+}
+
+/**
  * Extract session ID from span attributes
  */
 export function extractSessionId(span: OTelReadableSpan): string | undefined {

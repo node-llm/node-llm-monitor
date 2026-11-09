@@ -97,6 +97,20 @@ export interface MonitorUiOptions {
   hideLanguageSwitcher?: boolean;
   hideFooter?: boolean;
   documentTitle?: string;
+  /** Shown in the host's own page, in a same-origin frame: no header or footer, and it posts its height to the parent. */
+  embedded?: boolean;
+  /** Which tag keys to offer as filters, in order, with labels, such as [{ key: "project", label: "Project" }] */
+  tagFilters?: Array<{ key: string; label: string }>;
+}
+
+/** Tag filters from a query string: `tag.project=Checkout&tag.env=staging`. */
+export function tagsFromQuery(params: URLSearchParams): Record<string, string> | undefined {
+  const tags: Record<string, string> = {};
+  for (const [name, value] of params) {
+    if (name.startsWith("tag.") && name.length > 4 && value)
+      tags[name.slice(4, 68)] = value.slice(0, 200);
+  }
+  return Object.keys(tags).length ? tags : undefined;
 }
 
 /** A value as a script literal that can't close the script tag it sits in. */
@@ -193,7 +207,8 @@ export class MonitorDashboard {
     // Parse time range from query params
     const fromParam = url.searchParams.get("from");
     const from = fromParam ? new Date(fromParam) : undefined;
-    const timeFilter = from ? { from } : {};
+    const tags = tagsFromQuery(url.searchParams);
+    const timeFilter = { ...(from ? { from } : {}), ...(tags ? { tags } : {}) };
 
     // API Routes (nested under basePath)
     if (matchPath === `${this.apiBase}/stats`) {
@@ -231,6 +246,20 @@ export class MonitorDashboard {
       } catch (error) {
         console.error("[MonitorDashboard] Error getting metrics:", error);
         this.sendError(res, "Failed to get metrics", 500);
+      }
+      return true;
+    }
+
+    if (matchPath === `${this.apiBase}/tags`) {
+      try {
+        const tagValues =
+          typeof this.store.listTags === "function"
+            ? await this.store.listTags(from ? { from } : {})
+            : {};
+        this.sendJson(res, tagValues, req);
+      } catch (error) {
+        console.error("[MonitorDashboard] Error listing tags:", error);
+        this.sendError(res, "Failed to list tags", 500);
       }
       return true;
     }

@@ -19,6 +19,11 @@ export interface MonitoringEvent {
   gcTime?: number | undefined;
   allocations?: number | undefined;
   correctionRounds?: number | undefined;
+  /**
+   * Plain labels for filtering, such as { project: "Checkout", env: "staging" }. Set with the
+   * Monitor's `tags` option, or per call with `monitorTags`. Never put prompts or secrets here.
+   */
+  tags?: Record<string, string> | undefined;
   payload: Record<string, any>;
   createdAt: Date;
   provider: string;
@@ -88,6 +93,7 @@ export interface TraceSummary {
   reasoningTokens?: number;
   imageTokens?: number;
   correctionRounds?: number;
+  tags?: Record<string, string>;
 }
 
 export interface PaginatedTraces {
@@ -107,7 +113,19 @@ export interface TraceFilters {
   minLatency?: number;
   from?: Date;
   to?: Date;
+  /** Only calls carrying every one of these tags */
+  tags?: Record<string, string>;
 }
+
+/** The time range and tags that stats and metrics cover. */
+export interface StatsFilters {
+  from?: Date;
+  to?: Date;
+  tags?: Record<string, string>;
+}
+
+/** Each tag key with the values seen, for building filters. */
+export type TagValues = Record<string, string[]>;
 
 /**
  * Storage adapter interface for monitoring data.
@@ -124,10 +142,12 @@ export interface TraceFilters {
 export interface MonitoringStore {
   // Required: Core telemetry
   saveEvent(event: MonitoringEvent): Promise<void>;
-  getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats>;
+  getStats(options?: StatsFilters): Promise<MonitoringStats>;
 
   // Optional: Dashboard features
-  getMetrics?(options?: { from?: Date; to?: Date }): Promise<MetricsData>;
+  getMetrics?(options?: StatsFilters): Promise<MetricsData>;
+  /** The tag keys and values in a time range, so the dashboard can offer them as filters. */
+  listTags?(options?: { from?: Date; to?: Date }): Promise<TagValues>;
   listTraces?(
     options?: { limit?: number; offset?: number } & TraceFilters
   ): Promise<PaginatedTraces>;
@@ -150,6 +170,11 @@ export interface MonitorOptions {
    * Default: false (content is not stored)
    */
   captureContent?: boolean;
+  /**
+   * Tags added to every call this Monitor records, such as { service: "billing" }. A call's own
+   * `monitorTags` option adds to them and wins on the same key.
+   */
+  tags?: Record<string, string>;
   /**
    * Content scrubbing configuration.
    * When captureContent is true, this controls how sensitive data is handled.

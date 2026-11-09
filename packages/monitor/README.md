@@ -40,6 +40,8 @@ model monitoring_events {
   createdAt      DateTime @default(now())
   provider       String
   model          String
+  correctionRounds Int?
+  tags           Json?    // Plain labels for filtering, such as { project: "Checkout" }
 }
 ```
 
@@ -49,7 +51,7 @@ Then run the migration to create the table:
 npx prisma migrate dev --name add_monitoring_events
 ```
 
-_Note: For non-Prisma users, a raw SQL migration is available at `migrations/001_create_monitoring_events.sql`._
+_Note: For non-Prisma users, raw SQL migrations are in `migrations/`: `001` creates the table, `002` adds `correctionRounds` and `003` adds `tags`._
 
 ### 2. Integration
 
@@ -179,10 +181,13 @@ const dashboard = createMonitorMiddleware(store, {
     hideGithubLink: true,
     hideLanguageSwitcher: true,
     hideFooter: true,
-    documentTitle: "AI monitor · Acme Inc."
+    documentTitle: "AI monitor · Acme Inc.",
+    embedded: false // true: shown in a same-origin frame in your own page (see below)
   }
 });
 ```
+
+**Inside your own page.** See [Fit the dashboard into your app](../../docs/EMBEDDING.md) for embedded mode, the security checklist and a worked example. In short, with `embedded: true`, the dashboard drops its header and footer and its page background, and posts its height to the parent page as `{ type: "nodellm-monitor:height", height }`, to its own origin only. Show it in a same-origin `<iframe>` and size the frame from that message, checking `event.origin` is your own. Allow the dashboard page to be framed by your own site only (`Content-Security-Policy: frame-ancestors 'self'`); no other page needs to change.
 
 If your app serves the static build in `dashboard/build` itself (for example from a Rails or Django app, with its own API answering `./api/*`), set the same object as `window.__MONITOR_UI__` in a script before the dashboard's script. `injectDashboardConfig(html, { ui })` from `@node-llm/monitor/ui` does this safely. With a Content Security Policy, give that script your nonce.
 

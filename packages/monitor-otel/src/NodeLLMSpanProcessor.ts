@@ -46,7 +46,8 @@ import {
   mapStatusToEventType,
   generateRequestId,
   extractSessionId,
-  parseJsonAttribute
+  parseJsonAttribute,
+  extractTags
 } from "./utils.js";
 import { estimateCost } from "@node-llm/monitor";
 
@@ -225,6 +226,8 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       };
     }
 
+    const tags = extractTags(span);
+
     // Handle errors
     if (span.status.code === 2) {
       payload.error = span.status.message || "Unknown error";
@@ -241,7 +244,8 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
       payload,
       createdAt: new Date(),
       provider,
-      model
+      model,
+      ...(tags ? { tags } : {})
     };
   }
 

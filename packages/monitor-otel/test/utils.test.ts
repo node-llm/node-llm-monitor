@@ -308,3 +308,19 @@ describe("otel utils", () => {
     });
   });
 });
+
+describe("extractTags", () => {
+  it("reads llm.tag.* and ai.telemetry.metadata.tag.* attributes as plain tags", async () => {
+    const { extractTags } = await import("../src/utils.js");
+    const span = {
+      attributes: {
+        "llm.tag.project": "Checkout",
+        "ai.telemetry.metadata.tag.env": "staging",
+        "llm.tag.empty": "",
+        other: "x"
+      }
+    } as any;
+    expect(extractTags(span)).toEqual({ project: "Checkout", env: "staging" });
+    expect(extractTags({ attributes: {} } as any)).toBeUndefined();
+  });
+});

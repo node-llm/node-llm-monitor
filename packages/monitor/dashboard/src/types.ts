@@ -107,4 +107,9 @@ export interface TraceFilters {
   minLatency?: number;
   from?: Date;
   to?: Date;
+  /** Only calls carrying every one of these tags */
+  tags?: Record<string, string>;
 }
+
+/** Each tag key with the values seen, for building filters. */
+export type TagValues = Record<string, string[]>;

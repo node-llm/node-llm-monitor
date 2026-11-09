@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../api";
-import type { TraceSummary, MonitoringEvent, MetricsData, TimeRange, TraceFilters } from "../types";
+import type {
+  TraceSummary,
+  MonitoringEvent,
+  MetricsData,
+  TimeRange,
+  TraceFilters,
+  TagValues
+} from "../types";
 import { getTimeRangeDate } from "../components/TimeRangeFilter";
 
 interface UseMonitorOptions {
@@ -25,6 +32,30 @@ interface UseMonitorReturn {
   setFilters: (filters: TraceFilters) => void;
   selectTrace: (trace: TraceSummary | null) => void;
   refresh: () => Promise<void>;
+  /** Tag filters applied to every view: metrics, tokens and traces */
+  tags: Record<string, string>;
+  setTags: (tags: Record<string, string>) => void;
+  /** The tag keys and values on offer in the time range */
+  tagValues: TagValues;
+}
+
+// Tag filters live in the page URL (?tag.project=Checkout), so a filtered view can be bookmarked.
+function tagsFromUrl(): Record<string, string> {
+  const tags: Record<string, string> = {};
+  if (typeof window === "undefined") return tags;
+  for (const [name, value] of new URLSearchParams(window.location.search)) {
+    if (name.startsWith("tag.") && value) tags[name.slice(4)] = value;
+  }
+  return tags;
+}
+
+function tagsToUrl(tags: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  for (const name of [...url.searchParams.keys()])
+    if (name.startsWith("tag.")) url.searchParams.delete(name);
+  for (const [key, value] of Object.entries(tags)) url.searchParams.set(`tag.${key}`, value);
+  window.history.replaceState(window.history.state, "", url);
 }
 
 const DEFAULT_METRICS: MetricsData = {
@@ -60,18 +91,26 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
   const [error, setError] = useState<Error | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
   const [filters, setFilters] = useState<TraceFilters>({});
+  const [tags, setTagsState] = useState<Record<string, string>>(tagsFromUrl);
+  const [tagValues, setTagValues] = useState<TagValues>({});
+  const setTags = useCallback((next: Record<string, string>) => {
+    setTagsState(next);
+    tagsToUrl(next);
+  }, []);
 
   const mountedRef = useRef(true);
 
   const fetchData = useCallback(async () => {
     try {
       const from = getTimeRangeDate(timeRange);
-      const [metricsData, tracesData] = await Promise.all([
-        api.getMetrics({ from }),
-        api.getTraces({ limit, from, ...filters })
+      const [metricsData, tracesData, tagData] = await Promise.all([
+        api.getMetrics({ from, tags }),
+        api.getTraces({ limit, from, ...filters, tags }),
+        api.getTags({ from }).catch(() => ({}))
       ]);
 
       if (mountedRef.current) {
+        setTagValues(tagData);
         setMetrics(metricsData);
         setTraces(tracesData.items);
         setError(null);
@@ -87,7 +126,7 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
         setLoading(false);
       }
     }
-  }, [limit, timeRange, filters]);
+  }, [limit, timeRange, filters, tags]);
 
   const selectTrace = useCallback(async (trace: TraceSummary | null) => {
     setSelectedTrace(trace);
@@ -162,6 +201,9 @@ export function useMonitor(options: UseMonitorOptions = {}): UseMonitorReturn {
     filters,
     setFilters: handleFiltersChange,
     selectTrace,
-    refresh
+    refresh,
+    tags,
+    setTags,
+    tagValues
   };
 }

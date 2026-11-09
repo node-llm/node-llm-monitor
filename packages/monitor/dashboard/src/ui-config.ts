@@ -28,7 +28,21 @@ export interface MonitorUiConfig {
   hideFooter?: boolean;
   /** Browser tab title. Default: the header title. */
   documentTitle?: string;
+  /**
+   * Shown inside the host's own page, in a same-origin frame: no header or footer, no page
+   * background, and the page height is posted to the parent so it can size the frame. Messages go
+   * to the dashboard's own origin only, so no other site can receive them.
+   */
+  embedded?: boolean;
+  /**
+   * Which tag keys to offer as filters, in order, with labels, such as
+   * [{ key: "project", label: "Project" }]. Default: every tag key seen.
+   */
+  tagFilters?: Array<{ key: string; label: string }>;
 }
+
+/** The message an embedded dashboard posts to its parent with its height. */
+export const HEIGHT_MESSAGE = "nodellm-monitor:height";
 
 export const uiConfig: MonitorUiConfig =
   (globalThis as { __MONITOR_UI__?: MonitorUiConfig }).__MONITOR_UI__ ?? {};
@@ -68,6 +82,22 @@ export function applyUiConfig(
 
   const title = config.documentTitle ?? config.title;
   if (title) document.title = title;
+
+  if (config.embedded) embed(root);
+}
+
+// Tells a same-origin parent how tall the dashboard is, whenever that changes.
+function embed(root: HTMLElement): void {
+  root.classList.add("monitor-embedded");
+  if (window.parent === window || typeof ResizeObserver !== "function") return;
+
+  const post = () =>
+    window.parent.postMessage(
+      { type: HEIGHT_MESSAGE, height: Math.ceil(root.scrollHeight) },
+      window.location.origin
+    );
+  new ResizeObserver(post).observe(document.body);
+  post();
 }
 
 export { hexToChannels };

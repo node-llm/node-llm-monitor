@@ -5,7 +5,9 @@ import type {
   MonitoringStats,
   MetricsData,
   PaginatedTraces,
-  TraceFilters
+  TraceFilters,
+  StatsFilters,
+  TagValues
 } from "../../types.js";
 import { TimeSeriesBuilder } from "../../aggregation/TimeSeriesBuilder.js";
 import {
@@ -13,7 +15,9 @@ import {
   sortByTimeDesc,
   paginate,
   eventToTraceSummary,
-  computeStats
+  computeStats,
+  withTags,
+  collectTags
 } from "../filterTraces.js";
 
 interface EventCache {
@@ -60,13 +64,13 @@ export class FileAdapter implements MonitoringStore {
     return events;
   }
 
-  async getStats(options?: { from?: Date; to?: Date }): Promise<MonitoringStats> {
-    const events = await this.loadEvents();
+  async getStats(options?: StatsFilters): Promise<MonitoringStats> {
+    const events = withTags(await this.loadEvents(), options?.tags);
     return computeStats(events, options);
   }
 
-  async getMetrics(options?: { from?: Date; to?: Date }): Promise<MetricsData> {
-    const events = await this.loadEvents();
+  async getMetrics(options?: StatsFilters): Promise<MetricsData> {
+    const events = withTags(await this.loadEvents(), options?.tags);
     const from = options?.from || new Date(Date.now() - 24 * 60 * 60 * 1000);
     const to = options?.to;
     let filtered = events.filter((e) => new Date(e.time) >= from);
@@ -90,6 +94,10 @@ export class FileAdapter implements MonitoringStore {
     const items = paginate(filtered, limit, offset).map(eventToTraceSummary);
 
     return { items, total: filtered.length, limit, offset };
+  }
+
+  async listTags(options?: { from?: Date; to?: Date }): Promise<TagValues> {
+    return collectTags(await this.loadEvents(), options);
   }
 
   async getEvents(requestId: string): Promise<MonitoringEvent[]> {

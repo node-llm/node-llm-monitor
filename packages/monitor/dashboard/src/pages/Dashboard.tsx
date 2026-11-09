@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMonitor } from '../hooks/useMonitor';
+import { TagFilterBar } from '../components/TagFilterBar';
 import { 
   StatCard, 
   TraceList, 
@@ -41,12 +42,16 @@ export function Dashboard() {
     setFilters,
     selectTrace,
     refresh,
+    tags,
+    setTags,
+    tagValues,
   } = useMonitor({ pollInterval: autoRefresh ? 5000 : 0 });
 
   const stats = metrics?.totals;
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <TagFilterBar tagValues={tagValues} tags={tags} onChange={setTags} />
       {/* Header with filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex gap-2">

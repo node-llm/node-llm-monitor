@@ -345,4 +345,35 @@ describe("PrismaAdapter", () => {
       );
     });
   });
+
+  describe("tags", () => {
+    it("saves tags only when a call has them, so older tables keep working", async () => {
+      await adapter.saveEvent(createEvent());
+      expect(mockPrisma.monitoring_events.create.mock.calls[0][0].data).not.toHaveProperty("tags");
+
+      await adapter.saveEvent(createEvent({ tags: { project: "Checkout" } }));
+      expect(mockPrisma.monitoring_events.create.mock.calls[1][0].data.tags).toEqual({
+        project: "Checkout"
+      });
+    });
+
+    it("filters by every given tag through the JSON column", async () => {
+      await adapter.listTraces({ tags: { project: "Checkout", env: "staging" } });
+      expect(mockPrisma.monitoring_events.findMany.mock.calls[0][0].where.AND).toEqual([
+        { tags: { path: ["project"], equals: "Checkout" } },
+        { tags: { path: ["env"], equals: "staging" } }
+      ]);
+    });
+
+    it("lists each tag key with its values from recent calls", async () => {
+      mockPrisma.monitoring_events.findMany.mockResolvedValueOnce([
+        { tags: { project: "Search" } },
+        { tags: { project: "Checkout", env: "staging" } }
+      ]);
+      expect(await adapter.listTags()).toEqual({
+        project: ["Checkout", "Search"],
+        env: ["staging"]
+      });
+    });
+  });
 });

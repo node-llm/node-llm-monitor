@@ -35,6 +35,7 @@ import type {
 } from "./types.js";
 import {
   isAISpan,
+  isNodeLLMSpan,
   isTopLevelAISpan,
   getOperationType,
   extractAIAttributes,
@@ -86,6 +87,11 @@ export class NodeLLMSpanProcessor implements OTelSpanProcessor {
   onEnd(span: OTelReadableSpan): void {
     // Quick filter: only process AI spans
     if (!isAISpan(span)) {
+      return;
+    }
+
+    // Skip NodeLLM's own spans: the Monitor middleware already records those calls
+    if (!this.options.includeNodeLLMSpans && isNodeLLMSpan(span)) {
       return;
     }
 

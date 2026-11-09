@@ -141,6 +141,15 @@ export interface NodeLLMSpanProcessorOptions {
   sessionIdExtractor?: (span: OTelReadableSpan) => string | undefined;
 
   /**
+   * Whether to record spans that NodeLLM's own OpenTelemetry middleware
+   * created (they carry a `node_llm.request_id` attribute).
+   * Default: false. The Monitor middleware already records NodeLLM calls, so
+   * recording these spans too would count each call twice. Set to true when
+   * NodeLLM reaches Monitor only through OpenTelemetry.
+   */
+  includeNodeLLMSpans?: boolean;
+
+  /**
    * Error handler for storage failures
    */
   onError?: (error: Error, span: OTelReadableSpan) => void;

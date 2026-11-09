@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.5.0] - 2026-11-10
+
+### Features
+
+- **Fit the dashboard into your app.** A new `ui` option sets the title, subtitle, logo, accent color and theme, a `context` badge (such as the tenant shown), a link back to your app, and hides the GitHub link, language switcher or footer. See [docs/EMBEDDING.md](../../docs/EMBEDDING.md).
+- **Embedded mode.** With `ui.embedded`, the dashboard sits inside your own page in a same-origin frame: no header, footer or page background, and it posts its height to its own origin so the frame fits its content.
+- **Serve the build from any stack.** `injectDashboardConfig` adds the `ui` and i18n options to the page safely, for hosts that serve `dashboard/build` and answer `./api/*` themselves.
+- **Tag filters.** Label calls with plain tags, such as a project or environment (`new Monitor({ tags })`, or `monitorTags` per call), and filter metrics, tokens and traces by them from a filter bar. The API takes `tag.<key>=<value>` and lists tags at `./api/tags`; `ui.tagFilters` picks the keys and labels. Prisma needs `migrations/003_add_tags.sql`. See [docs/TAGS.md](../../docs/TAGS.md).
+
+### Security
+
+- Values injected into the dashboard page (the i18n options and the new `ui` options) are escaped so they can't close the script tag.
+
+### Changed
+
+- Dark mode is now class-based, following the system setting unless `ui.theme` says otherwise.
 
 ### Fixed
 

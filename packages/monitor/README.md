@@ -161,6 +161,31 @@ app.listen(3000, () => {
 });
 ```
 
+### Fit It Into Your App
+
+Pass `ui` to make the dashboard look like part of the app that hosts it: your name and logo, your accent color, a label for what is being monitored (such as a tenant), and a link back to your app. The built-in extras can be hidden.
+
+```ts
+const dashboard = createMonitorMiddleware(store, {
+  basePath: "/admin/monitor",
+  ui: {
+    title: "AI monitor",
+    subtitle: "Calls, cost and latency",
+    logoUrl: "/logo.svg",
+    accentColor: "#f2a93b",
+    theme: "light", // "light" | "dark" | "system" (default)
+    context: "Acme Inc.", // shown as a badge in the header
+    backLink: { label: "Back to app", href: "/" },
+    hideGithubLink: true,
+    hideLanguageSwitcher: true,
+    hideFooter: true,
+    documentTitle: "AI monitor · Acme Inc."
+  }
+});
+```
+
+If your app serves the static build in `dashboard/build` itself (for example from a Rails or Django app, with its own API answering `./api/*`), set the same object as `window.__MONITOR_UI__` in a script before the dashboard's script. `injectDashboardConfig(html, { ui })` from `@node-llm/monitor/ui` does this safely. With a Content Security Policy, give that script your nonce.
+
 ## Operational Metadata
 
 Capture granular operational metrics without changing execution semantics:

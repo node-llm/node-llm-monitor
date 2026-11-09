@@ -4,6 +4,7 @@
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconLogo, IconGlobe, IconGitHub } from './Icons';
+import { uiConfig } from '../ui-config';
 
 interface LayoutProps {
   children: ReactNode;
@@ -26,15 +27,29 @@ export function Layout({ children }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <IconLogo />
+              {uiConfig.backLink && (
+                <a
+                  href={uiConfig.backLink.href}
+                  className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-monitor-accent transition-colors pe-3 border-e border-monitor-border dark:border-slate-700"
+                >
+                  {isRTL ? '→' : '←'} {uiConfig.backLink.label}
+                </a>
+              )}
+              {uiConfig.logoUrl ? <img src={uiConfig.logoUrl} alt="" className="h-7 w-auto" /> : <IconLogo />}
               <div className={isRTL ? 'text-right' : 'text-left'}>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dashboard.title')}</h1>
-                <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboard.subtitle')}</p>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{uiConfig.title ?? t('dashboard.title')}</h1>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{uiConfig.subtitle ?? t('dashboard.subtitle')}</p>
               </div>
+              {uiConfig.context && (
+                <span className="ms-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-monitor-accent/15 text-gray-900 dark:text-gray-100 border border-monitor-accent/40">
+                  {uiConfig.context}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-6">
               {/* Modern Language Switcher */}
+              {!uiConfig.hideLanguageSwitcher && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
                 <IconGlobe className="w-4 h-4 text-gray-500 group-hover:text-monitor-accent transition-colors" />
                 <select 
@@ -49,12 +64,14 @@ export function Layout({ children }: LayoutProps) {
                   ))}
                 </select>
               </div>
+              )}
 
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                 <span className="text-xs text-green-700 dark:text-green-400 font-medium">Live</span>
               </div>
               
+              {!uiConfig.hideGithubLink && (
               <a 
                 href="https://github.com/node-llm/node-llm-monitor" 
                 target="_blank" 
@@ -64,6 +81,7 @@ export function Layout({ children }: LayoutProps) {
               >
                 <IconGitHub className="w-5 h-5" />
               </a>
+              )}
             </div>
           </div>
         </div>
@@ -75,6 +93,7 @@ export function Layout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
+      {!uiConfig.hideFooter && (
       <footer className="border-t border-monitor-border dark:border-slate-800 mt-auto bg-white/50 dark:bg-slate-900/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">
@@ -82,6 +101,7 @@ export function Layout({ children }: LayoutProps) {
           </p>
         </div>
       </footer>
+      )}
     </div>
   );
 }

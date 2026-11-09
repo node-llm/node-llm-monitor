@@ -76,6 +76,49 @@ export interface MonitorDashboardOptions {
     /** Fallback language */
     fallbackLng?: string;
   };
+  /**
+   * Customize the dashboard so it fits into a host app: title, logo, accent color, theme, a
+   * context label such as a tenant, a link back to the host, and which built-in extras to hide.
+   * Injected into the page as `window.__MONITOR_UI__`.
+   */
+  ui?: MonitorUiOptions | undefined;
+}
+
+export interface MonitorUiOptions {
+  title?: string;
+  subtitle?: string;
+  logoUrl?: string;
+  /** Hex color, such as "#f2a93b" */
+  accentColor?: string;
+  theme?: "light" | "dark" | "system";
+  context?: string;
+  backLink?: { label: string; href: string };
+  hideGithubLink?: boolean;
+  hideLanguageSwitcher?: boolean;
+  hideFooter?: boolean;
+  documentTitle?: string;
+}
+
+/** A value as a script literal that can't close the script tag it sits in. */
+export function scriptJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+/** The dashboard page with the host's i18n and UI options added at the start of its head. */
+export function injectDashboardConfig(
+  html: string,
+  options: { i18n?: MonitorDashboardOptions["i18n"] | undefined; ui?: MonitorUiOptions | undefined }
+): string {
+  const scripts = [
+    options.i18n && `<script>window.__MONITOR_I18N__ = ${scriptJson(options.i18n)};</script>`,
+    options.ui && `<script>window.__MONITOR_UI__ = ${scriptJson(options.ui)};</script>`
+  ].filter(Boolean);
+  return scripts.length ? html.replace("<head>", `<head>${scripts.join("")}`) : html;
 }
 
 export class MonitorDashboard {
@@ -87,6 +130,7 @@ export class MonitorDashboard {
   private readonly pollInterval: number;
   private readonly debug: boolean;
   private readonly i18nOptions?: MonitorDashboardOptions["i18n"];
+  private readonly uiOptions: MonitorUiOptions | undefined;
 
   constructor(storeOrPrisma: MonitoringStore | any, options: MonitorDashboardOptions = {}) {
     // Seamless integration: if its not a store but has prisma-like properties, wrap it
@@ -123,6 +167,7 @@ export class MonitorDashboard {
     this.cors = options.cors ?? false;
     this.pollInterval = options.pollInterval ?? 5000;
     this.i18nOptions = options.i18n;
+    this.uiOptions = options.ui;
   }
 
   /**
@@ -307,12 +352,11 @@ export class MonitorDashboard {
     try {
       let content = await readFile(fullPath);
 
-      // Inject i18n configuration into index.html
-      if (ext === ".html" && this.i18nOptions) {
-        const html = content.toString();
-        const injection = `<script>window.__MONITOR_I18N__ = ${JSON.stringify(this.i18nOptions)};</script>`;
-        const injectedHtml = html.replace("<head>", `<head>${injection}`);
-        content = Buffer.from(injectedHtml);
+      // Inject the host's i18n and UI options into index.html
+      if (ext === ".html" && (this.i18nOptions || this.uiOptions)) {
+        content = Buffer.from(
+          injectDashboardConfig(content.toString(), { i18n: this.i18nOptions, ui: this.uiOptions })
+        );
       }
 
       res.writeHead(200, {

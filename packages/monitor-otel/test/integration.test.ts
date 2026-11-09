@@ -52,7 +52,7 @@ async function getFullEvent(
 async function getFirstEvent(store: MemoryAdapter): Promise<MonitoringEvent | undefined> {
   const traces = await getTraceSummaries(store);
   if (traces.length === 0) return undefined;
-  return getFullEvent(store, traces[0].requestId);
+  return getFullEvent(store, traces[0]!.requestId);
 }
 
 describe("NodeLLMSpanProcessor Integration", () => {
@@ -71,7 +71,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
 
       const traces = await getTraceSummaries(store);
       expect(traces).toHaveLength(1);
-      expect(traces[0].provider).toBe("openai");
+      expect(traces[0]!.provider).toBe("openai");
     });
 
     it("should normalize openai.chat to openai", async () => {
@@ -79,7 +79,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].provider).toBe("openai");
+      expect(traces[0]!.provider).toBe("openai");
     });
 
     it("should normalize anthropic.messages to anthropic", async () => {
@@ -87,7 +87,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].provider).toBe("anthropic");
+      expect(traces[0]!.provider).toBe("anthropic");
     });
 
     it("should normalize google.generativeai to google", async () => {
@@ -95,7 +95,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].provider).toBe("google");
+      expect(traces[0]!.provider).toBe("google");
     });
   });
 
@@ -105,7 +105,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].model).toBe("gpt-4o-mini");
+      expect(traces[0]!.model).toBe("gpt-4o-mini");
     });
 
     it("should extract correct model from Anthropic spans", async () => {
@@ -113,7 +113,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].model).toBe("claude-3-5-sonnet-20241022");
+      expect(traces[0]!.model).toBe("claude-3-5-sonnet-20241022");
     });
 
     it("should extract correct model from genAi format spans", async () => {
@@ -121,7 +121,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].model).toBe("claude-3-opus");
+      expect(traces[0]!.model).toBe("claude-3-opus");
     });
   });
 
@@ -354,7 +354,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].model).toBe("text-embedding-3-small");
+      expect(traces[0]!.model).toBe("text-embedding-3-small");
 
       const event = await getFirstEvent(store);
       expect(event!.payload.operationType).toBe("ai.embed");
@@ -365,7 +365,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].model).toBe("text-embedding-3-large");
+      expect(traces[0]!.model).toBe("text-embedding-3-large");
 
       const event = await getFirstEvent(store);
       expect(event!.payload.operationType).toBe("ai.embedMany");
@@ -379,8 +379,8 @@ describe("NodeLLMSpanProcessor Integration", () => {
 
       const traces = await getTraceSummaries(store);
       // Cost should be calculated based on token counts
-      expect(traces[0].cost).toBeGreaterThan(0);
-      expect(typeof traces[0].cost).toBe("number");
+      expect(traces[0]!.cost).toBeGreaterThan(0);
+      expect(typeof traces[0]!.cost).toBe("number");
     });
 
     it("should estimate cost for Anthropic Claude", async () => {
@@ -388,7 +388,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
       await processor.forceFlush();
 
       const traces = await getTraceSummaries(store);
-      expect(traces[0].cost).toBeGreaterThan(0);
+      expect(traces[0]!.cost).toBeGreaterThan(0);
     });
   });
 
@@ -399,7 +399,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
 
       const traces = await getTraceSummaries(store);
       // Start: [1706918400, 0], End: [1706918401, 500000000] = 1500ms
-      expect(traces[0].duration).toBe(1500);
+      expect(traces[0]!.duration).toBe(1500);
     });
 
     it("should calculate correct duration for streaming spans", async () => {
@@ -408,7 +408,7 @@ describe("NodeLLMSpanProcessor Integration", () => {
 
       const traces = await getTraceSummaries(store);
       // Start: [1706918500, 0], End: [1706918502, 340000000] = 2340ms
-      expect(traces[0].duration).toBe(2340);
+      expect(traces[0]!.duration).toBe(2340);
     });
   });
 

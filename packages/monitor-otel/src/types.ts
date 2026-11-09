@@ -57,57 +57,57 @@ export type AIOperationType =
  */
 export interface AISpanAttributes {
   // Operation info
-  operationId?: string;
-  functionId?: string;
+  operationId?: string | undefined;
+  functionId?: string | undefined;
 
   // Model info
-  modelId?: string;
-  modelProvider?: string;
+  modelId?: string | undefined;
+  modelProvider?: string | undefined;
 
   // Request info
-  prompt?: string;
-  promptMessages?: string;
-  promptTools?: string;
+  prompt?: string | undefined;
+  promptMessages?: string | undefined;
+  promptTools?: string | undefined;
 
   // Response info
-  responseText?: string;
-  responseObject?: string;
-  responseToolCalls?: string;
-  responseFinishReason?: string;
-  responseId?: string;
-  responseModel?: string;
+  responseText?: string | undefined;
+  responseObject?: string | undefined;
+  responseToolCalls?: string | undefined;
+  responseFinishReason?: string | undefined;
+  responseId?: string | undefined;
+  responseModel?: string | undefined;
 
   // Usage
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
+  promptTokens?: number | undefined;
+  completionTokens?: number | undefined;
+  totalTokens?: number | undefined;
   // Cache/reasoning usage (forward-compatible AI SDK attributes - not yet
-  cachedInputTokens?: number;
-  reasoningTokens?: number;
+  cachedInputTokens?: number | undefined;
+  reasoningTokens?: number | undefined;
 
   // Timing (streaming)
-  msToFirstChunk?: number;
-  msToFinish?: number;
-  avgCompletionTokensPerSecond?: number;
+  msToFirstChunk?: number | undefined;
+  msToFinish?: number | undefined;
+  avgCompletionTokensPerSecond?: number | undefined;
 
   // Tool calls
-  toolCallName?: string;
-  toolCallId?: string;
-  toolCallArgs?: string;
-  toolCallResult?: string;
+  toolCallName?: string | undefined;
+  toolCallId?: string | undefined;
+  toolCallArgs?: string | undefined;
+  toolCallResult?: string | undefined;
 
   // GenAI semantic conventions
-  genAiSystem?: string;
-  genAiRequestModel?: string;
-  genAiResponseModel?: string;
-  genAiInputTokens?: number;
-  genAiOutputTokens?: number;
-  genAiCacheReadInputTokens?: number;
-  genAiCacheCreationInputTokens?: number;
-  genAiReasoningOutputTokens?: number;
+  genAiSystem?: string | undefined;
+  genAiRequestModel?: string | undefined;
+  genAiResponseModel?: string | undefined;
+  genAiInputTokens?: number | undefined;
+  genAiOutputTokens?: number | undefined;
+  genAiCacheReadInputTokens?: number | undefined;
+  genAiCacheCreationInputTokens?: number | undefined;
+  genAiReasoningOutputTokens?: number | undefined;
 
   // Custom metadata
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**

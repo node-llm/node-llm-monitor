@@ -13,7 +13,7 @@ import {
   normalizeModelName,
   normalizeProviderName
 } from "../src/utils.js";
-import { OTelReadableSpan } from "../src/types.js";
+import type { OTelReadableSpan } from "../src/types.js";
 
 describe("otel utils", () => {
   const mockSpanContext = () => ({

@@ -152,6 +152,7 @@ function EventRow({ event, isLast }: EventRowProps) {
     'request.start': { icon: '▶️', color: 'text-blue-600' },
     'request.end': { icon: '✅', color: 'text-green-600' },
     'request.error': { icon: '❌', color: 'text-red-600' },
+    'request.fallback': { icon: '↪️', color: 'text-orange-600' },
     'tool.start': { icon: '🔧', color: 'text-yellow-600' },
     'tool.end': { icon: '✓', color: 'text-green-600' },
     'tool.error': { icon: '⚠️', color: 'text-red-600' },
@@ -160,12 +161,18 @@ function EventRow({ event, isLast }: EventRowProps) {
   const config = eventConfig[event.eventType] || { icon: '•', color: 'text-gray-400' };
   const time = new Date(event.time);
   const toolName = event.payload?.toolCall?.function?.name;
+  const fallback =
+    event.eventType === 'request.fallback'
+      ? (event.payload as { from?: { model?: string; provider?: string }; to?: { model?: string; provider?: string }; errorType?: string })
+      : undefined;
+  const loadedTools = event.payload?.loadedTools as string[] | undefined;
 
   // Map event types to translation keys
   const eventTypeLabels: Record<string, string> = {
     'request.start': t('traces.eventTypes.requestStart'),
     'request.end': t('traces.eventTypes.requestEnd'),
     'request.error': t('traces.eventTypes.requestError'),
+    'request.fallback': t('traces.eventTypes.requestFallback'),
     'tool.start': t('traces.eventTypes.toolStart'),
     'tool.end': t('traces.eventTypes.toolEnd'),
     'tool.error': t('traces.eventTypes.toolError'),
@@ -192,6 +199,19 @@ function EventRow({ event, isLast }: EventRowProps) {
           </div>
         )}
         
+        {fallback && (
+          <div className="mt-1 p-2 bg-orange-50 rounded text-orange-800 font-mono text-[10px] border border-orange-200">
+            {fallback.from?.provider}/{fallback.from?.model} → {fallback.to?.provider}/{fallback.to?.model}
+            {fallback.errorType ? ` (${fallback.errorType})` : ''}
+          </div>
+        )}
+
+        {loadedTools && loadedTools.length > 0 && (
+          <div className="mt-1 p-2 bg-yellow-50 rounded text-yellow-800 font-mono text-[10px] border border-yellow-200">
+            {t('traces.loadedTools')}: {loadedTools.join(', ')}
+          </div>
+        )}
+
         {event.duration && (
           <p className="text-[10px] text-gray-500 mt-1">{t('traces.duration')}: {event.duration.toFixed(0)}ms</p>
         )}

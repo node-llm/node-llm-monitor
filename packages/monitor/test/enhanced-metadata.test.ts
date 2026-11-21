@@ -280,7 +280,7 @@ describe("Enhanced Metadata", () => {
       // Simulate what NodeLLM would do
       await monitor.onRequest(ctx);
 
-      const savedEvent = saveEvent.mock.calls[0][0];
+      const savedEvent = saveEvent.mock.calls[0]![0];
       expect(savedEvent.eventType).toBe("request.start");
     });
 
@@ -303,7 +303,7 @@ describe("Enhanced Metadata", () => {
       await monitor.onResponse(ctx, result);
 
       expect(saveEvent).toHaveBeenCalledTimes(2);
-      expect(saveEvent.mock.calls[1][0].eventType).toBe("request.end");
+      expect(saveEvent.mock.calls[1]![0].eventType).toBe("request.end");
     });
   });
 });

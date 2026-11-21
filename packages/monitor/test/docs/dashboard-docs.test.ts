@@ -34,7 +34,7 @@ describe("docs/monitor/dashboard", () => {
     app.use(middleware);
 
     expect(app.used.length).toBe(1);
-    expect(typeof app.used[0].handler).toBe("function");
+    expect(typeof app.used[0]!.handler).toBe("function");
   });
 
   it("createMonitoringRouter returns GET/POST handlers", () => {

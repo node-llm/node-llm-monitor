@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Features
+
+- **Fallback events.** With `@node-llm/core` 1.21+, a call that falls back to another model (`chat.withFallbacks`) records a `request.fallback` event: the models and providers it moved between, the attempt number and the error type. Its `request.end` already names the model that answered. The trace view shows it.
+- **Loaded tools.** A `tool_search` call's `tool.end` event records which deferred tools it loaded (`loadedTools`, names only), even with content capture off. The trace view lists them.
+
+### Fixes
+
+- **Type errors in tests.** `tsc` now passes for the whole package, tests included (19 errors before). The dashboard's API client import gained its `.js` extension.
+
 ## [0.5.0] - 2026-11-10
 
 ### Features

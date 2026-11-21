@@ -179,7 +179,24 @@ export class Monitor {
   async onToolCallEnd(ctx: MinimalContext, tool: any, result: any): Promise<void> {
     await this.emit(ctx, "tool.end", {
       toolCallId: tool.id,
-      result: this.captureContent ? this.scrubContent(result) : undefined
+      result: this.captureContent ? this.scrubContent(result) : undefined,
+      // Deferred tools: which tools a tool_search loaded. Tool names only, never content.
+      loadedTools: tool?.function?.name === "tool_search" ? loadedToolNames(result) : undefined
+    });
+  }
+
+  /**
+   * A request failed and NodeLLM is sending it to a fallback model
+   * (`chat.withFallbacks`, @node-llm/core 1.21+). The request's end event then
+   * reports the model that answered.
+   */
+  async onFallback(ctx: MinimalContext, event: any): Promise<void> {
+    await this.emit(ctx, "request.fallback", {
+      attempt: event?.attempt,
+      from: event?.from,
+      to: event?.to,
+      errorType: event?.error?.name,
+      error: event?.error?.message
     });
   }
 
@@ -357,5 +374,15 @@ export class Monitor {
       ...payload,
       sampling
     };
+  }
+}
+
+function loadedToolNames(result: unknown): string[] | undefined {
+  if (typeof result !== "string" || !result.startsWith("{")) return undefined;
+  try {
+    const loaded = (JSON.parse(result) as { loaded?: unknown }).loaded;
+    return Array.isArray(loaded) ? loaded.map(String) : undefined;
+  } catch {
+    return undefined;
   }
 }

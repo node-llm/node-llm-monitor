@@ -21,7 +21,7 @@ describe("docs/monitor/prisma", () => {
     const prisma = makeMockPrisma();
     const monitor = createPrismaMonitor(prisma);
 
-    expect(monitor.store).toBeInstanceOf(PrismaAdapter);
+    expect(monitor.getStore()).toBeInstanceOf(PrismaAdapter);
 
     await monitor.onRequest({
       requestId: "req-docs-001",

@@ -5,7 +5,7 @@ import type {
   MetricsData,
   TraceFilters,
   TagValues
-} from "../types";
+} from "../types.js";
 
 const API_BASE = "./api";
 

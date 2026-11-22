@@ -2,6 +2,7 @@ export type EventType =
   | "request.start"
   | "request.end"
   | "request.error"
+  | "request.fallback"
   | "tool.start"
   | "tool.end"
   | "tool.error";

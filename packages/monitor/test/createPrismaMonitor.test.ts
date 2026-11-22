@@ -50,7 +50,7 @@ describe("createPrismaMonitor", () => {
 
       // Validation happens on first store method call (lazy validation)
       try {
-        await monitor.store?.getEvents("test");
+        await monitor.getStore().getEvents?.("test");
         expect(true).toBe(false); // Should not reach here
       } catch (err) {
         expect(err).toBeDefined();
@@ -84,7 +84,7 @@ describe("createPrismaMonitor", () => {
       await monitor.onRequest(mockCtx);
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
-      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
+      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0]![0];
 
       expect(callArgs.data).toBeDefined();
       expect(callArgs.data.eventType).toBe("request.start");
@@ -126,7 +126,7 @@ describe("createPrismaMonitor", () => {
       await monitor.onResponse(mockCtx, mockResponse);
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
-      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
+      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0]![0];
 
       expect(callArgs.data.eventType).toBe("request.end");
       expect(callArgs.data.requestId).toBe("req_test_002");
@@ -165,7 +165,7 @@ describe("createPrismaMonitor", () => {
       await monitor.onError(mockCtx, testError);
 
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalled();
-      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0][0];
+      const callArgs = mockPrisma.monitoring_events.create.mock.calls[0]![0];
 
       expect(callArgs.data.eventType).toBe("request.error");
       expect(callArgs.data.requestId).toBe("req_error_001");
@@ -182,6 +182,8 @@ describe("createPrismaMonitor", () => {
           eventType: "request.start",
           requestId: "req_retrieve_001",
           time: new Date(),
+          payload: {},
+          createdAt: new Date(),
           provider: "openai",
           model: "gpt-4o-mini"
         }
@@ -293,8 +295,8 @@ describe("createPrismaMonitor", () => {
       expect(mockPrisma.monitoring_events.create).toHaveBeenCalledTimes(2);
 
       const calls = mockPrisma.monitoring_events.create.mock.calls;
-      expect(calls[0][0].data.eventType).toBe("request.start");
-      expect(calls[1][0].data.eventType).toBe("request.end");
+      expect(calls[0]![0].data.eventType).toBe("request.start");
+      expect(calls[1]![0].data.eventType).toBe("request.end");
 
       console.log(`✓ Works as middleware in NodeLLM pipeline`);
       console.log(`  Request ID: ${mockCtx.requestId}`);
@@ -369,7 +371,7 @@ describe("createPrismaMonitor", () => {
 
       // Validation happens on first store method call (lazy validation)
       try {
-        await monitor.store?.getEvents("test");
+        await monitor.getStore().getEvents?.("test");
         expect(true).toBe(false); // Should not reach here
       } catch (err) {
         expect(err).toBeDefined();

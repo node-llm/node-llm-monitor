@@ -161,8 +161,8 @@ describe("ContentScrubber", () => {
         users: [{ email: "john@example.com" }, { email: "jane@example.com" }]
       };
       const result = scrubber.scrubObject(obj);
-      expect(result.users[0].email).toContain("[EMAIL]");
-      expect(result.users[1].email).toContain("[EMAIL]");
+      expect(result.users[0]!.email).toContain("[EMAIL]");
+      expect(result.users[1]!.email).toContain("[EMAIL]");
     });
 
     it("should handle circular references", () => {
@@ -247,7 +247,7 @@ describe("ContentScrubber", () => {
       expect(result.items.length).toBe(3);
       expect(result.items[0]).toContain("[EMAIL]");
       expect(result.items[1]).toBe("safe text");
-      expect(result.items[2].email).toContain("[EMAIL]");
+      expect((result.items[2] as { email: string }).email).toContain("[EMAIL]");
     });
   });
 
